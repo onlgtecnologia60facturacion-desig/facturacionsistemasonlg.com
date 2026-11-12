@@ -1,0 +1,16 @@
+<!-- Supabase → Authentication → Email Templates → "Confirm signup"
+     Asunto:  Tu código de confirmación ONLG: {{ .Token }}  -->
+<div style="background:#eef5ff;padding:32px 12px;font-family:Segoe UI,Arial,sans-serif">
+ <div style="max-width:460px;margin:auto;background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 8px 28px #0b1f4a22">
+  <div style="background:linear-gradient(160deg,#061a45,#0b5ed7);padding:26px;text-align:center">
+   <img src="https://zonrhkrnlqxbqcpriurd.supabase.co/storage/v1/object/public/brand/logo.png" width="96" height="96" alt="ONLG" style="border-radius:50%;background:#fff">
+   <div style="color:#fff;font-size:18px;font-weight:700;margin-top:10px">ONLG Technology</div>
+  </div>
+  <div style="padding:28px;text-align:center;color:#1e293b">
+   <h2 style="margin:0 0 8px">Confirma tu correo</h2>
+   <p style="color:#475569;margin:0 0 18px">Escribe este código en la página para activar tu cuenta:</p>
+   <div style="font-size:34px;font-weight:800;letter-spacing:8px;background:#eef5ff;color:#0a3b9c;border-radius:12px;padding:14px 0">{{ .Token }}</div>
+   <p style="color:#64748b;font-size:13px;margin:18px 0 0">El código vence en 1 hora. Si no creaste esta cuenta, ignora este mensaje.</p>
+  </div>
+ </div>
+</div>
