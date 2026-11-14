@@ -1276,13 +1276,13 @@
         .access-status-pending { color:#b45309; }
         .access-action-row { display:flex; gap:.5rem; flex-wrap:wrap; margin-top:.85rem; }
         body { padding-top:64px; }
-        .sidebar { height:calc(100vh - 64px); top:64px; }
-        .main { height:calc(100vh - 64px); }
+        .sidebar { height:calc(100vh - 64px);height:calc(100dvh - 64px); top:64px; }
+        .main { height:calc(100vh - 64px);height:calc(100dvh - 64px); }
         @media (max-width: 700px) {
             #platformBrandBar { height:58px; padding:.4rem .7rem; }
             body { padding-top:58px; }
-            .sidebar { height:calc(100vh - 58px); top:58px; }
-            .main { height:calc(100vh - 58px); }
+            .sidebar { height:calc(100vh - 58px);height:calc(100dvh - 58px); top:58px; }
+            .main { height:calc(100vh - 58px);height:calc(100dvh - 58px); }
             .platform-brand-logo { width:38px; height:38px; }
             .platform-brand-subtitle { display:none; }
             .platform-access-badge { font-size:.7rem; padding:.35rem .55rem; }
@@ -1436,16 +1436,6 @@ body{font-family:'Manrope','Segoe UI',Tahoma,sans-serif;background:#f1f6fe}
 .inv-card .st.ok{background:#dcfce7;color:#166534}.inv-card .st.low{background:#fef3c7;color:#92400e}
 .pf-count{text-align:center;margin-bottom:1.6rem}.pf-count b{display:block;font-size:clamp(2.2rem,6vw,3.4rem);color:#0a3b9c;font-weight:800}.pf-count span{color:#475569}
 #platformGate .inv-demo{max-width:900px;margin:1rem auto 0;padding:1.2rem}
-
-#suppliers>.card{border-top:4px solid #0b5ed7}
-#suppliers .card>h2,#suppliers .card>h3{display:flex;align-items:center;gap:.5rem;color:#0a3b9c}
-#suppliers .form-group label{display:flex;align-items:center;gap:.45rem;font-weight:700;color:#1e3a8a;font-size:.88rem;margin-bottom:.35rem}
-#suppliers .form-group label i{width:28px;height:28px;border-radius:9px;background:#eaf2ff;color:#0b5ed7;display:inline-flex;align-items:center;justify-content:center;font-size:.78rem}
-#suppliers input,#suppliers select,#suppliers textarea{border:1.5px solid #d6e3fb;border-radius:12px;background:#f8fbff;padding:.72rem .9rem;transition:border-color .15s,box-shadow .15s,background .15s}
-#suppliers input:focus,#suppliers select:focus,#suppliers textarea:focus{background:#fff;border-color:#2b7bff;box-shadow:0 0 0 4px #2b7bff22;outline:0}
-#suppliers input[type=file]{background:#fff;border-style:dashed;padding:.55rem}
-#suppliers .card .card{background:linear-gradient(#f3f8ff,#fff)!important;border:1px solid #cfe0ff!important;border-left:4px solid #0b5ed7!important;border-radius:14px!important;box-shadow:none}
-#suppliers input:not([type=checkbox]):not([type=radio]),#suppliers select,#suppliers textarea{width:100%;box-sizing:border-box}
 </style>
 </head>
 <body>
@@ -1768,18 +1758,15 @@ body{font-family:'Manrope','Segoe UI',Tahoma,sans-serif;background:#f1f6fe}
                             <div class="form-group">
                                 <label>Tipo de Factura</label>
                                 <select id="invoiceType" onchange="toggleSaleTypeUI()">
-                                    <option value="ticket">Ticket (Contado)</option>
-                                    <option value="invoice">Factura Legal</option>
+                                    <option value="ticket">Factura de Contado</option>
+                                    <option value="invoice">Factura Legal (con RTN del cliente)</option>
                                     <option value="credit">Factura a Crédito</option>
                                 </select>
                             </div>
                             <div class="form-group">
                                 <label>Método de Pago</label>
-                                <select id="paymentMethod" onchange="toggleSaleTypeUI()">
-                                    <option value="cash">Efectivo</option>
-                                    <option value="credit">Crédito</option>
-                                </select>
-                            </div>
+                                \1
+                            <div class="form-group"><label>RTN del cliente (14 dígitos)</label><input type="text" id="saleCustomerRtn" inputmode="numeric" maxlength="17" placeholder="Vacío = Consumidor Final"></div>
                         </div>
                     </div>
 
@@ -2457,9 +2444,16 @@ body{font-family:'Manrope','Segoe UI',Tahoma,sans-serif;background:#f1f6fe}
                     <div class="form-row">
                         <div class="form-group">
                             <label>ISV/IVA (%)</label>
-                            <input type="number" id="settingsTaxRate" placeholder="15" step="0.01" min="0" max="100">
-                        </div>
+                            \1
+                    <div class="form-row">
+                        <div class="form-group"><label>CAI (autorizado por el SAR)</label><input type="text" id="settingsCAI" maxlength="40" placeholder="XXXXXX-XXXXXX-XXXXXX-XXXXXX-XXXXXX-XX" style="text-transform:uppercase"></div>
+                        <div class="form-group"><label>Fecha límite de emisión</label><input type="date" id="settingsFiscalDeadline"></div>
                     </div>
+                    <div class="form-row">
+                        <div class="form-group"><label>Rango autorizado: desde</label><input type="text" id="settingsRangeFrom" maxlength="19" placeholder="001-001-01-00000001"></div>
+                        <div class="form-group"><label>Rango autorizado: hasta</label><input type="text" id="settingsRangeTo" maxlength="19" placeholder="001-001-01-00001000"></div>
+                    </div>
+                    <p style="font-size:.82rem;color:#6b7280">Formato de factura <b>NNN-NNN-NN-NNNNNNNN</b>: establecimiento, punto de emisión, tipo de documento (01 = factura) y correlativo de 8 dígitos. El sistema toma esos datos del rango y avanza el correlativo solo. El RTN (arriba) debe tener 14 dígitos.</p>
                 </div>
 
                 <div id="internationalSettingsModal" class="modal">
@@ -2597,7 +2591,8 @@ body{font-family:'Manrope','Segoe UI',Tahoma,sans-serif;background:#f1f6fe}
                 </div>
 
                 <div class="card" id="usersCard">
-                    <h2>Usuarios del Sistema</h2>
+                    <h2><i class="fas fa-user-shield"></i> Propiedad de la empresa · Usuarios del Sistema</h2>
+                    <div class="alert alert-info"><i class="fas fa-lock"></i> Solo el <strong>propietario</strong> puede ver, crear y eliminar usuarios. <strong>Cajero</strong>: ventas y caja · <strong>Cobrador</strong>: ventas, cobro de deudas y cuentas de crédito · <strong>Mantenimiento</strong>: inventario y proveedores · <strong>Gerente</strong>: todo menos Ajustes.</div>
                     <p style="font-size: 0.85rem; color: #6b7280; margin-top: -0.5rem;">
                         Crea un usuario por cada persona que use la caja. Los <strong>Empleados</strong> ven Dashboard, Nueva Venta, Caja, Historial y Clientes, y cada uno cuadra su propia caja. El <strong>Gerente</strong> ve todo menos Ajustes y revisa los cuadres de todos los cajeros. Solo el <strong>Administrador</strong> entra a Ajustes y administra usuarios.
                     </p>
@@ -2618,12 +2613,7 @@ body{font-family:'Manrope','Segoe UI',Tahoma,sans-serif;background:#f1f6fe}
                         </div>
                         <div class="form-group">
                             <label>Rol</label>
-                            <select id="newUserRole">
-                                <option value="cashier">Empleado</option>
-<option value="collector">Cobrador (solo factura)</option>
-<option value="manager">Gerente</option>
-                                <option value="admin">Administrador</option>
-                            </select>
+                            <select id="newUserRole"><option value="cashier">Cajero</option><option value="collector">Cobrador</option><option value="maintenance">Mantenimiento</option><option value="manager">Gerente</option></select>
                         </div>
                     </div>
                     <div class="form-row">
@@ -2797,10 +2787,9 @@ body{font-family:'Manrope','Segoe UI',Tahoma,sans-serif;background:#f1f6fe}
             <label>Rol</label>
             <select id="editUserRole">
                 <option value="cashier">Empleado</option>
-<option value="collector">Cobrador (solo factura)</option>
 <option value="manager">Gerente</option>
                 <option value="admin">Administrador</option>
-            </select>
+            <option value="collector">Cobrador</option><option value="maintenance">Mantenimiento</option></select>
         </div>
         <div class="form-group"><label>Correo</label><input type="email" id="editUserEmail"></div>
         <div class="form-group"><label>Teléfono</label><input type="text" id="editUserPhone"></div>
@@ -3439,7 +3428,7 @@ function applyRolePermissions() {
 }
 
 async function addUser() {
-    if (currentUser.role !== 'admin') { alert('Solo un administrador puede crear usuarios'); return; }
+    if (!isOwner()) { alert('Solo el propietario de la empresa puede crear usuarios.'); return; }
     if (!pfUserLimitOk()) return;
     const name = document.getElementById('newUserName').value.trim();
     const username = document.getElementById('newUserUsername').value.trim().toLowerCase();
@@ -3452,7 +3441,7 @@ async function addUser() {
     const phone = document.getElementById('newUserPhone').value.trim();
     const dni = document.getElementById('newUserDni').value.trim();
     const register = document.getElementById('newUserRegister').value.trim();
-    if (role !== 'admin' && role !== 'collector' && (!email || !phone)) { alert('Un cajero o gerente necesita correo y teléfono.'); return; }
+    if (role !== 'admin' && (!email || !phone)) { alert('Un cajero o gerente necesita correo y teléfono.'); return; }
 
     if (!name || !username || password.length < 4) {
         alert('Completa nombre, usuario y una contraseña de al menos 4 caracteres');
@@ -3491,6 +3480,8 @@ async function addUser() {
 }
 
 function deleteUser(id) {
+    if (!isOwner()) { alert('Solo el propietario de la empresa puede eliminar usuarios.'); return; }
+    const _du = appData.users.find(u => u.id === id); if (_du && _du.role === 'admin') { alert('No se puede eliminar al propietario.'); return; }
     if (id === currentUser.id) { alert('No puedes eliminar tu propio usuario mientras tienes la sesión abierta'); return; }
     if (appData.users.length <= 1) { alert('Debe existir al menos un usuario'); return; }
     if (!confirm('¿Eliminar este usuario?')) return;
@@ -3503,7 +3494,7 @@ function deleteUser(id) {
 // administrador que tiene la sesión abierta (editar su propio nombre,
 // usuario, rol o contraseña).
 function editUser(id) {
-    if (!currentUser || currentUser.role !== 'admin') { alert('Solo un administrador puede editar usuarios.'); return; }
+    if (!isOwner()) { alert('Solo el propietario de la empresa puede editar usuarios.'); return; }
     const user = appData.users.find(u => u.id === id);
     if (!user) return;
     document.getElementById('editUserId').value = user.id;
@@ -3532,7 +3523,7 @@ function closeEditUserModal() {
 }
 
 async function saveUserEdit() {
-    if (!currentUser || currentUser.role !== 'admin') { alert('Solo un administrador puede guardar cambios de usuarios.'); return; }
+    if (!isOwner()) { alert('Solo el propietario de la empresa puede editar usuarios.'); return; }
     const id = Number(document.getElementById('editUserId').value);
     const user = appData.users.find(u => u.id === id);
     if (!user) return;
@@ -4498,9 +4489,11 @@ function completeSale() {
 
     const sale = {
         id: Date.now(),
-        number: `FAC-${String(appData.sales.length + 1).padStart(6, '0')}`,
+        number: nextFiscalNumber(),
         customerId: customerIdRaw ? Number(customerIdRaw) : null,
         customerName: customerNameTyped || null,
+        customerRtn: ((document.getElementById('saleCustomerRtn') || {}).value || '').replace(/\D/g, ''),
+        totalWords: numeroALetras(total),
         invoiceType: invoiceType,
         paymentMethod: paymentMethod,
         items: [...currentSale],
@@ -6429,7 +6422,7 @@ function loadSettings() {
     const brandName = document.getElementById('platformBrandName');
     if (brandName) brandName.textContent = appData.company.name || 'Plataforma de Inventarios';
     const brandSubtitle = document.getElementById('platformBrandSubtitle');
-    if (brandSubtitle) brandSubtitle.textContent = `${appData.company.businessType || 'Renta de inventarios'} · Propiedad de la sociedad ONLG`;
+    if (brandSubtitle) brandSubtitle.textContent = `${appData.company.businessType || 'Renta de inventarios'} · Propietario: ${appData.company.owner || 'Administrador'}`;
     refreshLogoUI();
     updateInternationalSummary();
     updateLastBackupInfo();
@@ -6477,7 +6470,7 @@ function applySettings() {
     const brandName = document.getElementById('platformBrandName');
     if (brandName) brandName.textContent = appData.company.name || 'Plataforma de Inventarios';
     const brandSubtitle = document.getElementById('platformBrandSubtitle');
-    if (brandSubtitle) brandSubtitle.textContent = `${appData.company.businessType || 'Renta de inventarios'} · Propiedad de la sociedad ONLG`;
+    if (brandSubtitle) brandSubtitle.textContent = `${appData.company.businessType || 'Renta de inventarios'} · Propietario: ${appData.company.owner || 'Administrador'}`;
 
     // Update ISV percent display
     document.getElementById('isVPercent').textContent = appData.company.taxRate;
@@ -7648,14 +7641,14 @@ const PLATFORM_CONFIG = {
   lpsRate: 26.5,   /* lempiras por 1 USD (solo para mostrar el aproximado) */
   turnstileSiteKey: '',   /* Cloudflare Turnstile (anti-bots). Vacio = sin captcha */
   plans: [
-    {id:'r1', name:'Regular · 1 mes',   months:1,  price:4.53,  lps:120,  popular:true, tier:'regular'},
-    {id:'r3', name:'Regular · 3 meses', months:3,  price:12.45, lps:330,  tier:'regular'},
-    {id:'r6', name:'Regular · 6 meses', months:6,  price:22.64, lps:600,  tier:'regular'},
-    {id:'r12',name:'Regular · 12 meses',months:12, price:40.75, lps:1080, best:true, tier:'regular'},
-    {id:'c1', name:'Completo · 1 mes',   months:1,  price:8.30,  lps:220,  tier:'completo'},
-    {id:'c3', name:'Completo · 3 meses', months:3,  price:22.64, lps:600,  tier:'completo'},
-    {id:'c6', name:'Completo · 6 meses', months:6,  price:41.51, lps:1100, tier:'completo'},
-    {id:'c12',name:'Completo · 12 meses',months:12, price:74.72, lps:1980, best:true, tier:'completo'} ]
+    {id:'r1', name:'Regular · 1 mes',   months:1,  price:3.77,  lps:100,  popular:true, tier:'regular'},
+    {id:'r3', name:'Regular · 3 meses', months:3,  price:10.19, lps:270,  tier:'regular'},
+    {id:'r6', name:'Regular · 6 meses', months:6,  price:19.25, lps:510,  tier:'regular'},
+    {id:'r12',name:'Regular · 12 meses',months:12, price:33.96, lps:900, best:true, tier:'regular'},
+    {id:'c1', name:'Completo · 1 mes',   months:1,  price:7.55,  lps:200,  tier:'completo'},
+    {id:'c3', name:'Completo · 3 meses', months:3,  price:20.38, lps:540,  tier:'completo'},
+    {id:'c6', name:'Completo · 6 meses', months:6,  price:38.49, lps:1020, tier:'completo'},
+    {id:'c12',name:'Completo · 12 meses',months:12, price:67.92, lps:1800, best:true, tier:'completo'} ]
 };
 /* Para Supabase ejecuta el archivo supabase_setup.sql en el SQL Editor */
 function appStorageKey(){ const t=sessionStorage.getItem('activeTenant'); return t?('appData::'+t):'appData'; }
@@ -7688,7 +7681,7 @@ function pfPassField(id,ph){ return '<div class="pf-pw"><input type="password" i
   '<div class="pf-sec" id="pfReviews"></div>'+
   '<div class="pf-sec" id="pfFaq"></div>'+
   '<div class="pf-sec"><h2 style="text-align:center">Sobre ONLG Technology</h2><p style="text-align:center;max-width:700px;margin:auto;color:#475569">Somos una empresa de <b>tecnología, diseño e innovación</b>. Creamos software y sistemas a la medida para negocios de cualquier tamaño, desde Honduras para el mundo.</p></div>'+
-  '<div class="pf-sec" id="pfPlans"><h2 style="text-align:center">Precios claros para tu pulpería</h2><p style="text-align:center;color:#475569">Desde <b>L 120 al mes</b>. Pruebas gratis, sin contratos y cancelas cuando quieras. Pagas por transferencia bancaria o PayPal.</p><div class="pf-grid">'+plans+'</div></div>'+
+  '<div class="pf-sec" id="pfPlans"><h2 style="text-align:center">Precios claros para tu pulpería</h2><p style="text-align:center;color:#475569">Desde <b>L 100 al mes</b>. Pruebas gratis, sin contratos y cancelas cuando quieras. Pagas por transferencia bancaria o PayPal.</p><div class="pf-grid">'+plans+'</div></div>'+
   '<div class="pf-foot">© 2026 EMPRESA DE TECNOLOGIA ONLG · <a href="#" onclick="pfOwner();return false;">Acceso propietario</a></div></div>'+
   '<div id="pf_auth" style="display:none"><div class="pf-box"><div style="position:absolute;left:-9999px;top:-9999px" aria-hidden="true"><label>No llenar</label><input id="pf_hp" tabindex="-1" autocomplete="off"></div><div id="pfCaptcha" style="min-height:0;margin-bottom:.5rem"></div><div class="pf-tabs"><button id="pfB_in" class="pf-tab on" onclick="pfTab(\'in\')">Entrar</button><button id="pfB_up" class="pf-tab" onclick="pfTab(\'up\')">Crear cuenta</button><button id="pfB_cash" class="pf-tab" onclick="pfTab(\'cash\')">Soy empleado</button></div>'+
   '<div id="pfT_in"><label>Correo</label><input type="email" id="inMail">'+'<label>Contraseña</label>'+pfPassField('inPass','Contraseña')+'<button class="pf-btn" style="width:100%" onclick="pfLogin()">Entrar</button><button class="pf-btn alt" style="width:100%;margin-top:.6rem" onclick="pfGoogle()"><i class="fab fa-google"></i> Continuar con Google</button></div>'+
@@ -8676,7 +8669,7 @@ async function pfCashierImpl() {
     sessionStorage.setItem('empCode', code); sessionStorage.setItem('activeTenant', d.id); sessionStorage.setItem('tenantMode', 'cashier'); sessionStorage.removeItem('currentUser');
     const db = pfDB(); db.accounts = [{ id: d.id, name: d.owner_name || '', business: d.business || '', email: '', code: '', expiresAt: d.expires_at }]; _pfSaveRaw(db);
     if (d.data && Object.keys(d.data).length) dataStore().setItem('appData::' + d.id, JSON.stringify(d.data));
-    location.reload();
+    sessionStorage.setItem('pfGo', '1'); location.reload();
 }
 pfCashier = pfGuard('cash', pfCashierImpl, false);
 
@@ -9145,7 +9138,7 @@ window.addEventListener('DOMContentLoaded', pfCookieInit);
 </style>
 
 <script id="v9script">
-/* ============ PRECIOS: L 120 al mes, 2 planes principales y "más opciones" ============ */
+/* ============ PRECIOS: L 100 al mes, 2 planes principales y "más opciones" ============ */
 PLATFORM_CONFIG.mainPlans = ['r1', 'r12'];   // los dos que se muestran grandes (los demás van en "Ver más opciones")
 
 function pfN(n) { return Number(n).toLocaleString('es-HN', { maximumFractionDigits: 2 }); }
@@ -9232,10 +9225,10 @@ window.addEventListener('DOMContentLoaded', function () { setTimeout(function ()
         tip: _I('Usa el menú de la izquierda para moverte. Si te pierdes, toca el botón ❓.', 'Use the menu on the left to move around. If you get lost, tap the ❓ button.', 'Use o menu à esquerda para navegar. Se se perder, toque no botão ❓.', 'Utilisez le menu de gauche pour naviguer. Si vous êtes perdu, touchez le bouton ❓.') };
     const B = { ico: 'fa-ticket', page: null, kw: 'membresia plan prueba gratis cancelar precio pagar invitar descuento membership trial price cancel',
         title: _I('Tu membresía y prueba gratis', 'Your membership and free trial', 'Sua assinatura e teste grátis', 'Votre abonnement et essai gratuit'),
-        body: _I('Empiezas con 13 días de prueba gratis. Después eliges un plan desde L 120 al mes (también hay planes de 3, 6 y 12 meses con ahorro). No hay cobros automáticos: puedes cancelar cuando quieras con el enlace "Cancelar membresía" de la barra inferior y tus datos se conservan.',
-            'You start with a 13-day free trial. Then you pick a plan from L 120 per month (there are also 3, 6 and 12-month plans that save money). There are no automatic charges: you can cancel any time with the "Cancel membership" link in the bottom bar and your data is kept.',
-            'Você começa com 13 dias de teste grátis. Depois escolhe um plano a partir de L 120 por mês (há também planos de 3, 6 e 12 meses com economia). Não há cobranças automáticas: você cancela quando quiser pelo link "Cancelar assinatura" na barra inferior e seus dados são mantidos.',
-            'Vous commencez par 13 jours d\'essai gratuit. Ensuite vous choisissez un forfait à partir de L 120 par mois (il existe aussi des forfaits de 3, 6 et 12 mois plus avantageux). Aucun prélèvement automatique : vous annulez quand vous voulez avec le lien « Annuler l\'abonnement » de la barre du bas et vos données sont conservées.'),
+        body: _I('Empiezas con 13 días de prueba gratis. Después eliges un plan desde L 100 al mes (también hay planes de 3, 6 y 12 meses con ahorro). No hay cobros automáticos: puedes cancelar cuando quieras con el enlace "Cancelar membresía" de la barra inferior y tus datos se conservan.',
+            'You start with a 13-day free trial. Then you pick a plan from L 100 per month (there are also 3, 6 and 12-month plans that save money). There are no automatic charges: you can cancel any time with the "Cancel membership" link in the bottom bar and your data is kept.',
+            'Você começa com 13 dias de teste grátis. Depois escolhe um plano a partir de L 100 por mês (há também planos de 3, 6 e 12 meses com economia). Não há cobranças automáticas: você cancela quando quiser pelo link "Cancelar assinatura" na barra inferior e seus dados são mantidos.',
+            'Vous commencez par 13 jours d\'essai gratuit. Ensuite vous choisissez un forfait à partir de L 100 par mois (il existe aussi des forfaits de 3, 6 et 12 mois plus avantageux). Aucun prélèvement automatique : vous annulez quand vous voulez avec le lien « Annuler l\'abonnement » de la barre du bas et vos données sont conservées.'),
         tip: _I('Con "Invitar y ganar": si alguien que invitas hace su primera compra, recibes 19,56% de descuento en tu próxima compra.', 'With "Invite and earn": if someone you invite makes their first purchase, you get 19.56% off your next purchase.', 'Com "Convidar e ganhar": se alguém que você convidar fizer a primeira compra, você ganha 19,56% de desconto na próxima.', 'Avec « Inviter et gagner » : si une personne invitée fait son premier achat, vous obtenez 19,56 % de réduction sur votre prochain achat.') };
     const C = { ico: 'fa-key', page: null, kw: 'codigo empleados empleado entrar acceso cambiar codigo staff code employee',
         title: _I('Código para tus empleados', 'Code for your employees', 'Código para seus funcionários', 'Code pour vos employés'),
@@ -9311,7 +9304,7 @@ function pfOtpView(mail) {
     const box = document.querySelector('#pf_auth .pf-box'); if (!box) return; box.classList.add('otp-off');
     const d = document.createElement('div'); d.id = 'pfOtp'; d.className = 'pf-box pf-otp';
     d.innerHTML = '<img class="pf-authlogo" src="' + LOGO10 + '" alt="ONLG"><h3>Confirma tu correo</h3><p>Te enviamos un código a <b>' + escapeHtml(mail) + '</b>. Escríbelo para activar tu cuenta.</p>' +
-        '<input id="otpCode" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="••••••"><button class="pf-btn pf-full" onclick="pfOtpVerify()">Confirmar y entrar</button>' +
+        '<input id="otpCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" oninput="this.value=this.value.replace(/[^0-9]/g,String())" placeholder="••••••"><button class="pf-btn pf-full" onclick="pfOtpVerify()">Confirmar y entrar</button>' +
         '<button class="pf-btn alt pf-full" id="otpResend" style="margin-top:.5rem" onclick="pfOtpResend()">Reenviar código</button>' +
         '<p style="text-align:center;margin-top:.8rem"><a href="#" onclick="pfOtpClose();return false">Usar otro correo</a></p>';
     box.parentNode.insertBefore(d, box.nextSibling); pfOtpCool(); setTimeout(() => { const i = gid('otpCode'); if (i) i.focus(); }, 60);
@@ -9330,15 +9323,17 @@ async function pfOtpResend() {
 }
 const _pfReg10 = pfRegister, _pfLogin10 = pfLogin;
 pfRegister = pfGuard('up', async function () {
-    if (!cloudOn()) return _pfReg10();
+    if (!cloudOn()) return pfLocalOtpStart() ? _pfReg10() : undefined;
     await sbReady(); const name = gid('upName').value.trim(), biz = gid('upBiz').value.trim(), mail = gid('upMail').value.trim().toLowerCase(), pw = gid('upPass').value;
     if (!name || !biz || !/^[^\s@'"]+@[^\s@'"]+\.[^\s@'"]+$/.test(mail)) return pfMsg('Completa nombre, pulpería y un correo válido.');
     if (pw.length < 8) return pfMsg('La contraseña debe tener al menos 8 caracteres.');
     const r = await cloud().auth.signUp({ email: mail, password: pw, options: { data: { name, business: biz } } });
     if (r.error) return pfMsg(pfSbErr(r.error));
     if (r.data.user && r.data.user.identities && !r.data.user.identities.length) return pfMsg('Ese correo ya tiene cuenta. Inicia sesión.');
-    if (!r.data.session) { pfNotify('registro', 'Nueva cuenta: ' + biz); return pfOtpView(mail); }
-    await cloud().auth.signOut(); return pfMsg('No se pudo enviar el código de confirmación. Intenta de nuevo en unos minutos.');
+    if (!r.data.session) { pfNotify('registro', 'Nueva cuenta: ' + biz); pfOtpView.type = 'signup'; return pfOtpView(mail); }
+    await cloud().auth.signOut(); const o = await cloud().auth.signInWithOtp({ email: mail, options: { shouldCreateUser: false } }); if (o.error) return pfMsg(pfSbErr(o.error));
+    pfNotify('registro', 'Nueva cuenta: ' + biz); pfOtpView.type = 'email'; return pfOtpView(mail);
+    await pfPull(); const acc = pfDB().accounts.find(a => a.id === r.data.user.id); if (!acc) return pfMsg('No se pudo crear la cuenta.'); pfProceed(acc);
 }, true);
 pfLogin = pfGuard('in', async function () {
     if (!cloudOn()) return _pfLogin10();
@@ -9455,17 +9450,207 @@ pfDress = function () {
 };
 [800, 2000, 4000].forEach(ms => setTimeout(() => { try { pfDress(); } catch (e) {} }, ms));
 
-/* ---- Rol Cobrador: solo genera la factura y se la entrega al cliente ---- */
-const _rl10 = roleLabel; roleLabel = function (r) { return r === 'collector' ? 'Cobrador' : _rl10(r); };
-const _bp10 = blockedPagesFor; blockedPagesFor = function (r) { return r === 'collector' ? ['dashboard', 'inventory', 'cashier', 'history', 'suppliers', 'customers', 'debts', 'creditAccounts', 'promotions', 'reports', 'settings'] : _bp10(r); };
-const _sp10 = showPage; showPage = function (p) { if (currentUser && currentUser.role === 'collector') p = 'sale'; return _sp10(p); };
-const _rc10 = requireOpenCashSession; requireOpenCashSession = function () { if (currentUser && currentUser.role === 'collector') return { id: 'cobrador-' + currentUser.id, register: 'Cobrador', number: 'COB' }; return _rc10(); };
-
-/* ---- Proveedores: iconos en cada campo ---- */
-const SUP_ICO = { supplierCompanyName: 'fas fa-building', supplierContactName: 'fas fa-user-tie', supplierLogo: 'fas fa-image', supplierTaxId: 'fas fa-id-card', supplierPhone: 'fas fa-phone', supplierWhatsapp: 'fab fa-whatsapp', supplierEmail: 'fas fa-envelope', supplierWebsite: 'fas fa-globe', supplierFacebook: 'fab fa-facebook-f', supplierInstagram: 'fab fa-instagram', supplierTiktok: 'fab fa-tiktok', supplierLinkedin: 'fab fa-linkedin-in', supplierCountry: 'fas fa-flag', supplierCity: 'fas fa-city', supplierAddress: 'fas fa-location-dot', supplierCategory: 'fas fa-tags', supplierPaymentTerms: 'fas fa-handshake', supplierCreditLimit: 'fas fa-money-bill-wave', supplierCurrency: 'fas fa-coins', supplierBank: 'fas fa-building-columns', supplierBankAccount: 'fas fa-hashtag' };
-function supDress() { Object.keys(SUP_ICO).forEach(id => { const el = gid(id), lb = el && el.closest('.form-group') && el.closest('.form-group').querySelector('label'); if (lb && !lb.dataset.ic) { lb.dataset.ic = '1'; lb.insertAdjacentHTML('afterbegin', '<i class="' + SUP_ICO[id] + '"></i>'); } }); }
-const _pfDress11 = pfDress; pfDress = function () { _pfDress11(); try { supDress(); } catch (e) {} };
-
 </script>
+
+<script id="v11script">
+/* ===== v11: código de 6 dígitos por correo, roles, factura fiscal SAR ===== */
+let pfLocalOtp = { mail: '', code: '', exp: 0, tries: 0, ok: '' };
+function pfLocalOtpSend(mail) {
+    pfLocalOtp = { mail, code: String(crypto.getRandomValues(new Uint32Array(1))[0] % 1000000).padStart(6, '0'), exp: Date.now() + 6e5, tries: 0, ok: '' };
+    pfOtpView(mail); const p = gid('pfOtp') && gid('pfOtp').querySelector('p');
+    if (p) p.insertAdjacentHTML('afterend', '<p style="background:#fef3c7;color:#92400e;padding:.5rem;border-radius:8px;font-size:.85rem">Modo local (sin servidor de correo): tu código es <b>' + pfLocalOtp.code + '</b>. Con Supabase conectado el código llega al correo.</p>');
+}
+function pfLocalOtpStart() {
+    const mail = gid('upMail').value.trim().toLowerCase();
+    if (pfLocalOtp.ok === mail) { pfLocalOtp.ok = ''; return true; }
+    if (!gid('upName').value.trim() || !gid('upBiz').value.trim() || !/^\S+@\S+\.\S+$/.test(mail) || gid('upPass').value.length < 6) { pfMsg('Completa nombre, pulpería, un correo válido y la contraseña.'); return false; }
+    pfLocalOtpSend(mail); return false;
+}
+pfOtpVerify = async function () {
+    const tok = gid('otpCode').value.replace(/\D/g, ''); if (tok.length !== 6) return pfMsg('Escribe el código de 6 dígitos que llegó a tu correo.');
+    if (!cloudOn()) {
+        const L = pfLocalOtp; if (!L.code || Date.now() > L.exp) return pfMsg('El código venció. Pide uno nuevo.');
+        if (++L.tries > 5) { L.code = ''; return pfMsg('Demasiados intentos. Pide un código nuevo.'); }
+        if (tok !== L.code) return pfMsg('Código incorrecto.');
+        L.ok = L.mail; L.code = ''; pfOtpClose(); pfView('auth'); pfTab('up'); pfMsg('¡Correo confirmado!', true); return pfRegister();
+    }
+    await sbReady(); let r = null;
+    for (const ty of [pfOtpView.type || 'signup', pfOtpView.type === 'email' ? 'signup' : 'email']) { r = await cloud().auth.verifyOtp({ email: pfOtpView.mail, token: tok, type: ty }); if (!r.error && r.data.user) break; }
+    if (r.error || !r.data.user) return pfMsg('Código incorrecto o vencido. Pide uno nuevo con “Reenviar código”.');
+    pfOtpClose(); await pfPull(); const acc = pfDB().accounts.find(a => a.id === r.data.user.id);
+    if (!acc) return pfMsg('Correo confirmado. Inicia sesión para continuar.', true);
+    pfNotify('registro', 'Correo confirmado: ' + acc.business); pfMsg('¡Correo confirmado!', true); pfProceed(acc);
+};
+pfOtpResend = async function () {
+    if (!cloudOn()) return pfLocalOtpSend(pfOtpView.mail);
+    await sbReady(); const e = pfOtpView.mail, a = cloud().auth;
+    const r = pfOtpView.type === 'email' ? await a.signInWithOtp({ email: e, options: { shouldCreateUser: false } }) : await a.resend({ type: 'signup', email: e });
+    if (r.error) return pfMsg('No se pudo reenviar: ' + pfSbErr(r.error)); pfMsg('Código enviado. Revisa tu bandeja y la carpeta de spam.', true); pfOtpCool();
+};
+
+/* ---- Roles: solo el propietario ve, crea y elimina usuarios ---- */
+function isOwner() { return !!currentUser && currentUser.role === 'admin' && sessionStorage.getItem('tenantMode') !== 'cashier'; }
+roleLabel = function (r) { return ({ admin: 'Propietario', manager: t('Gerente'), cashier: t('Cajero'), collector: 'Cobrador', maintenance: 'Mantenimiento' })[r] || t('Empleado'); };
+blockedPagesFor = function (r) {
+    if (r === 'admin') return []; if (r === 'manager') return ['settings'];
+    if (r === 'collector') return ['settings', 'reports', 'inventory', 'suppliers', 'promotions'];
+    if (r === 'maintenance') return ['settings', 'reports', 'sale', 'cashier', 'history', 'customers', 'debts', 'creditAccounts', 'promotions'];
+    return ['settings', 'reports', 'inventory', 'suppliers'];
+};
+function pfUsersCard() {
+    const c = gid('usersCard'); if (!c) return; const f = document.querySelector('#settings .card');
+    if (f && f !== c && f.nextElementSibling !== c) f.insertAdjacentElement('afterend', c);
+    c.style.display = isOwner() ? '' : 'none';
+}
+const _arp11 = applyRolePermissions; applyRolePermissions = function () { _arp11.apply(this, arguments); try { pfUsersCard(); } catch (e) {} };
+const _uut11 = updateUsersTable; updateUsersTable = function () { if (!isOwner()) { const t0 = gid('usersTable'); if (t0) t0.innerHTML = ''; return; } return _uut11.apply(this, arguments); };
+window.addEventListener('DOMContentLoaded', () => setTimeout(pfUsersCard, 100));
+
+/* ---- Monto en letras ---- */
+function numeroALetras(n, cur) {
+    n = Math.round((Number(n) || 0) * 100) / 100; const ent = Math.floor(n), cent = Math.round((n - ent) * 100);
+    const U = ['', 'UN', 'DOS', 'TRES', 'CUATRO', 'CINCO', 'SEIS', 'SIETE', 'OCHO', 'NUEVE', 'DIEZ', 'ONCE', 'DOCE', 'TRECE', 'CATORCE', 'QUINCE', 'DIECISÉIS', 'DIECISIETE', 'DIECIOCHO', 'DIECINUEVE', 'VEINTE', 'VEINTIÚN', 'VEINTIDÓS', 'VEINTITRÉS', 'VEINTICUATRO', 'VEINTICINCO', 'VEINTISÉIS', 'VEINTISIETE', 'VEINTIOCHO', 'VEINTINUEVE'];
+    const D = ['', '', '', 'TREINTA', 'CUARENTA', 'CINCUENTA', 'SESENTA', 'SETENTA', 'OCHENTA', 'NOVENTA'];
+    const C = ['', 'CIENTO', 'DOSCIENTOS', 'TRESCIENTOS', 'CUATROCIENTOS', 'QUINIENTOS', 'SEISCIENTOS', 'SETECIENTOS', 'OCHOCIENTOS', 'NOVECIENTOS'];
+    const h = x => { if (x === 100) return 'CIEN'; const r = x % 100, c = C[Math.floor(x / 100)]; return (r < 30 ? c + ' ' + U[r] : c + ' ' + D[Math.floor(r / 10)] + (r % 10 ? ' Y ' + U[r % 10] : '')).trim(); };
+    const g = x => { if (x < 1000) return h(x); const m = Math.floor(x / 1000), r = x % 1000; return ((m === 1 ? 'MIL' : h(m) + ' MIL') + ' ' + (r ? h(r) : '')).trim(); };
+    let w; if (ent === 0) w = 'CERO'; else if (ent < 1e6) w = g(ent); else { const mm = Math.floor(ent / 1e6), r = ent % 1e6; w = (mm === 1 ? 'UN MILLÓN' : g(mm) + ' MILLONES') + (r ? ' ' + g(r) : ' DE'); }
+    const code = cur || (appData.company && appData.company.currency) || 'HNL';
+    const N = { HNL: ['LEMPIRA', 'LEMPIRAS'], USD: ['DÓLAR', 'DÓLARES'], EUR: ['EURO', 'EUROS'], MXN: ['PESO', 'PESOS'], GTQ: ['QUETZAL', 'QUETZALES'] }[code] || [code, code];
+    return w + ' CON ' + String(cent).padStart(2, '0') + '/100 ' + (ent === 1 ? N[0] : N[1]);
+}
+
+/* ---- Numeración fiscal NNN-NNN-NN-NNNNNNNN, CAI y RTN ---- */
+const FX_RE = /^\d{3}-\d{3}-\d{2}-\d{8}$/;
+function fxCfg() { appData.company = appData.company || {}; return appData.company.fiscal = appData.company.fiscal || { cai: '', from: '', to: '', deadline: '', last: 0 }; }
+function fxCorr(x) { return FX_RE.test(x || '') ? parseInt(x.slice(-8), 10) : 0; }
+function fxCai(x) { const k = String(x || '').toUpperCase().replace(/[^0-9A-F]/g, ''); if (k.length !== 32) return ''; return [0, 6, 12, 18, 24, 30].map(i => k.substr(i, i === 30 ? 2 : 6)).join('-'); }
+function nextFiscalNumber() { const f = fxCfg(), p = FX_RE.test(f.from) ? f.from.slice(0, 11) : '001-001-01-', n = Math.max((f.last || 0) + 1, fxCorr(f.from) || 1); f.last = n; return p + String(n).padStart(8, '0'); }
+function fxProblem() {
+    const f = fxCfg(); if (!f.cai) return ''; const n = Math.max((f.last || 0) + 1, fxCorr(f.from) || 1);
+    if (f.deadline && new Date(f.deadline + 'T23:59:59') < new Date()) return 'La fecha límite de emisión de tu CAI (' + f.deadline.split('-').reverse().join('/') + ') ya venció. Pide un nuevo CAI al SAR y actualízalo en Ajustes → Configuración Fiscal.';
+    if (fxCorr(f.to) && n > fxCorr(f.to)) return 'Se agotó el rango autorizado (' + f.to + '). Pide un nuevo rango al SAR y actualízalo en Ajustes → Configuración Fiscal.';
+    return '';
+}
+const _cs11 = completeSale;
+completeSale = function () {
+    const pr = fxProblem(); if (pr) { alert(pr); return; }
+    const r = ((gid('saleCustomerRtn') || {}).value || '').replace(/\D/g, '');
+    if (r && r.length !== 14) { alert('El RTN del cliente debe tener 14 dígitos.'); return; }
+    if (gid('invoiceType').value === 'invoice' && !r) { alert('Para una Factura Legal escribe el RTN del cliente (14 dígitos).'); return; }
+    return _cs11.apply(this, arguments);
+};
+const _cl11 = clearSale; clearSale = function () { const r = _cl11.apply(this, arguments); const e = gid('saleCustomerRtn'); if (e) e.value = ''; return r; };
+const _ls11 = loadSettings, _ss11 = saveSettings;
+loadSettings = function () { const r = _ls11.apply(this, arguments); try { const f = fxCfg(); gid('settingsCAI').value = fxCai(f.cai) || f.cai || ''; gid('settingsRangeFrom').value = f.from || ''; gid('settingsRangeTo').value = f.to || ''; gid('settingsFiscalDeadline').value = f.deadline || ''; } catch (e) {} return r; };
+saveSettings = function () {
+    const cai = gid('settingsCAI').value.trim(), from = gid('settingsRangeFrom').value.trim(), to = gid('settingsRangeTo').value.trim(), rt = gid('settingsRTN').value.trim();
+    if (rt && rt.replace(/\D/g, '').length !== 14) { alert('El RTN debe tener 14 dígitos.'); return; }
+    if (cai && !fxCai(cai)) { alert('El CAI debe tener 32 caracteres (números 0-9 y letras A-F).'); return; }
+    if ((from && !FX_RE.test(from)) || (to && !FX_RE.test(to))) { alert('El rango debe tener el formato NNN-NNN-NN-NNNNNNNN, por ejemplo 001-001-01-00000123.'); return; }
+    const f = fxCfg(); if (f.from !== from) f.last = 0;
+    f.cai = fxCai(cai); f.from = from; f.to = to; f.deadline = gid('settingsFiscalDeadline').value;
+    return _ss11.apply(this, arguments);
+};
+
+/* ---- Factura impresa: CAI, rango, RTN, desglose de impuesto y total en letras (como la factura del SAR) ---- */
+function fxExtra(sale) {
+    const c = appData.company || {}, f = fxCfg(), rate = (sale.taxRate !== undefined ? sale.taxRate : c.taxRate) || 0, tax = sale.tax || 0, fm = formatMoney;
+    const base = (sale.total || 0) - tax - (sale.creditInterest || 0), dl = f.deadline ? f.deadline.split('-').reverse().join('/') : '', rtn = String(sale.customerRtn || '').replace(/\D/g, '');
+    const head = []; if (f.cai) head.push('CAI: ' + escapeHtml(fxCai(f.cai) || f.cai)); if (f.from && f.to) head.push('Rango autorizado: del ' + escapeHtml(f.from) + ' al ' + escapeHtml(f.to));
+    const ln = x => '<div>' + x + '</div>';
+    const foot = '<div style="font-size:.78em;margin-top:.6rem;border-top:1px dashed #999;padding-top:.4rem;line-height:1.5">' +
+        ln('<b>RTN cliente:</b> ' + (rtn ? escapeHtml(rtn) : 'Consumidor Final')) +
+        '<table style="width:100%;border-collapse:collapse;text-align:right"><tr><th style="text-align:left">IMP%</th><th>PRECIO</th><th>IMPUESTO</th><th>TOTAL</th></tr><tr><td style="text-align:left">' + (tax > 0 ? 'G ' + rate : 'E 0') + '</td><td>' + fm(base) + '</td><td>' + fm(tax) + '</td><td>' + fm(sale.total || 0) + '</td></tr></table>' +
+        ln('<b>SON:</b> ' + escapeHtml(sale.totalWords || numeroALetras(sale.total))) +
+        ln('No. Orden de compra exenta: ____________') + ln('No. Registro SAG: ____________') + ln('No. Registro exonerados: ____________') + ln('No. Carnet exonerado: ____________') +
+        ln('G = artículo gravado · E = artículo exento') + ln('<b>Original:</b> Cliente · <b>Copia:</b> Obligado tributario emisor') + (dl ? ln('<b>Fecha límite de emisión:</b> ' + dl) : '') +
+        '<div style="text-align:center;margin-top:.3rem">La factura es beneficio de todos, exíjala</div></div>';
+    return { head, foot };
+}
+const _ip11 = ivtParts, _it11 = ivtTotals, _ir11 = ivtRender;
+ivtParts = function (sale, cu) { const P = _ip11(sale, cu); P.fx = fxExtra(sale); P.contact = P.contact.concat(P.fx.head); return P; };
+ivtTotals = function (P) { return _it11(P) + (P.fx ? P.fx.foot : ''); };
+ivtRender = function (n, col, sale, cu, plain) {
+    let h = _ir11(n, col, sale, cu, plain);
+    if (n === 5) { const k = '<div class="ds"></div><div class="fo">', i = h.lastIndexOf(k); if (i > -1) h = h.slice(0, i) + ivtParts(sale, cu).fx.foot + h.slice(i); }
+    return h;
+};
+
+/* ---- Al abrir la página siempre se ve la página principal ---- */
+const _pe12 = pfEnter; pfEnter = async function () { sessionStorage.setItem('pfGo', '1'); return _pe12.apply(this, arguments); };
+function pfGoSystem() { sessionStorage.setItem('pfGo', '1'); location.reload(); }
+const _boot12 = pfAfterBoot;
+pfAfterBoot = async function () {
+    const go = sessionStorage.getItem('pfGo') || sessionStorage.getItem('pfOAuth'); sessionStorage.removeItem('pfGo');
+    if (!go && sessionStorage.getItem('activeTenant')) {
+        pfView('land');
+        const nav = document.querySelector('.pf-nav > div:last-child');
+        if (nav && !gid('pfEnterBtn')) nav.insertAdjacentHTML('afterbegin', '<button id="pfEnterBtn" class="pf-btn" onclick="pfGoSystem()"><i class="fas fa-right-to-bracket"></i> Entrar a mi sistema</button> ');
+        return;
+    }
+    return _boot12.apply(this, arguments);
+};
+
+/* ---- Métodos de pago de Honduras (enlace de pago de cada pasarela + confirmación con referencia) ---- */
+PLATFORM_CONFIG.gateways = [
+    { id: 'pixelpay', name: 'PixelPay', icon: 'fa-qrcode', sub: 'Tarjeta y pago con QR', url: '' },
+    { id: 'clinpays', name: 'Clinpays', icon: 'fa-credit-card', sub: 'Tarjeta de crédito o débito', url: '' },
+    { id: 'bac', name: 'BAC Credomatic', icon: 'fa-building-columns', sub: 'Tarjeta de crédito o débito', url: '' },
+    { id: 'promerica', name: 'Banco Promerica', icon: 'fa-building-columns', sub: 'Tarjeta de crédito o débito', url: '' },
+    { id: 'ficohsa', name: 'Ficohsa (Fico-link)', icon: 'fa-link', sub: 'Tarjetas Ficohsa', url: '' }
+];  /* url: pega aquí el enlace de pago que te da cada pasarela. Acepta {amount}, {plan} y {ref}. También puede venir de platform_settings.data.gateways = {"pixelpay":"https://..."} */
+function pfGwUrl(g) {
+    const u = (((pfDB().settings || {}).gateways || {})[g.id] || g.url || '').replace('{amount}', pfPlanLps(pfPlan).toFixed(2)).replace('{plan}', encodeURIComponent(pfPlan.name)).replace('{ref}', encodeURIComponent(pfAcc.code));
+    return /^https:\/\//i.test(u) ? u : '';
+}
+pfChoose = function (id) {
+    pfPlan = PLATFORM_CONFIG.plans.find(p => p.id === id); const box = gid('pfPay'); box.style.display = 'block';
+    const m = (fn, ic, t0, sm) => '<button class="pf-m" onclick="pfSel(this);' + fn + '"><i class="' + ic + '"></i><span>' + t0 + '</span><small>' + sm + '</small></button>';
+    box.innerHTML = '<div class="pf-sum"><div><small>Plan elegido</small><b>' + pfPlan.name + '</b></div><div style="text-align:right"><small>Total a pagar</small><b>' + pfAmt(pfPlan) + '</b><br><small>≈ $' + pfFmt(pfPlan.price) + ' USD</small></div></div><h4 class="pf-h">Elige tu método de pago</h4>' +
+        '<div class="pf-methods" style="grid-template-columns:repeat(2,1fr)">' +
+        PLATFORM_CONFIG.gateways.map(g => m("pfGateway('" + g.id + "')", 'fas ' + g.icon, g.name, g.sub)).join('') +
+        m('pfBankForm()', 'fas fa-building-columns', 'Cuenta de banco', 'Depósito o transferencia') + m('pfCashInfo()', 'fas fa-money-bill-wave', 'Efectivo', 'Te visitamos') +
+        m('pfPaypal()', 'fab fa-paypal', 'PayPal', 'Tarjeta o saldo') + (PLATFORM_CONFIG.googlePay.merchantId ? m('pfGPay()', 'fab fa-google-pay', 'Google Pay', 'Pago rápido') : '') +
+        '</div><div id="payArea"></div><p class="pf-lock"><i class="fas fa-lock"></i> Tu membresía se activa al confirmar el pago.</p>';
+    box.scrollIntoView({ behavior: 'smooth' });
+};
+function pfGateway(id) {
+    const g = PLATFORM_CONFIG.gateways.find(x => x.id === id), u = pfGwUrl(g);
+    gid('payArea').innerHTML = '<div class="pf-info" style="display:block"><b>' + escapeHtml(g.name) + '</b> · ' + g.sub + '<br>Monto a pagar: <b>' + pfAmt(pfPlan) + '</b></div>' + (u ?
+        '<a class="pf-btn pf-full" style="display:block;text-align:center;text-decoration:none;margin:.6rem 0" target="_blank" rel="noopener" href="' + escapeHtml(u) + '"><i class="fas fa-lock"></i> Pagar con ' + escapeHtml(g.name) + '</a>' +
+        '<label class="pf-l">Al terminar de pagar, escribe el número de autorización o referencia</label><input id="gwRef" autocomplete="off" placeholder="Ej: 123456">' +
+        '<label class="pf-l">Foto del comprobante (opcional)</label><input type="file" id="gwRcpt" accept="image/*"><button class="pf-btn pf-full" onclick="pfGwSend(\'' + id + '\')"><i class="fas fa-paper-plane"></i> Confirmar mi pago</button>' :
+        '<div class="pf-info" style="display:block;margin-top:.6rem">Este método se activa muy pronto. Mientras tanto paga con <b>Cuenta de banco</b>, <b>PayPal</b> o <b>Efectivo</b>.</div>');
+}
+async function pfGwSend(id) {
+    const g = PLATFORM_CONFIG.gateways.find(x => x.id === id), ref = gid('gwRef').value.trim(), f = gid('gwRcpt').files[0];
+    if (ref.length < 4) return pfMsg('Escribe el número de autorización o referencia.'); if (f && f.size > 1500000) return pfMsg('La imagen pesa más de 1.5 MB.');
+    const rec = f ? await new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(f); }) : '';
+    const pid = 'p' + Date.now() + Math.random().toString(36).slice(2, 5), data = Object.assign({ gateway: g.id, ref: g.id + ':' + ref }, rec ? { receipt: rec } : {});
+    if (cloudOn()) {
+        await sbReady(); const r = await cloud().from('payments').insert({ id: pid, tenant_id: pfAcc.id, plan: pfPlan.id, months: pfPlan.months, price: pfPlan.price, method: g.name, data });
+        if (r.error) return pfMsg(r.error.code === '23505' ? 'Esa referencia ya fue usada en otro pago.' : 'No se pudo registrar el pago: ' + r.error.message);
+    } else {
+        const db = pfDB(); db.payments.push(Object.assign({ id: pid, accId: pfAcc.id, plan: pfPlan.id, months: pfPlan.months, price: pfPlan.price, priceLps: pfPlan.lps, method: g.name, status: 'pending', at: new Date().toISOString() }, data)); pfSave(db);
+    }
+    pfPayDone({ status: 'pending' }, pfAcc);
+}
+window.addEventListener('DOMContentLoaded', () => setTimeout(() => { const g = document.querySelector('#pfPlans .pf-grid'); if (g && !gid('pfPayChips')) g.insertAdjacentHTML('afterend', '<p id="pfPayChips" style="text-align:center;color:#475569;margin-top:1rem"><b>Aceptamos:</b> PixelPay · Clinpays · BAC Credomatic · Banco Promerica · Ficohsa · Transferencia bancaria · PayPal · Efectivo</p>'); }, 200));
+
+/* La portada se muestra desde el primer instante; solo se oculta si vienes de "Entrar a mi sistema", empleado o Google */
+try { if (!sessionStorage.getItem('pfGo') && !sessionStorage.getItem('pfOAuth')) pfView('land'); } catch (e) { console.warn(e); }
+</script>
+<style id="v12style">
+/* Menú lateral: el encabezado (logo y nombre) y el pie quedan fijos; solo el menú se desplaza */
+.sidebar{overflow:hidden!important}
+.sidebar-header{flex:0 0 auto;padding:.7rem 1rem!important;display:flex;align-items:center;gap:.7rem;text-align:left!important}
+.sidebar-header .sidebar-logo{margin:0!important;flex:0 0 auto}
+.sidebar-logo img{width:46px!important;height:46px!important}
+.sidebar-title{font-size:.9rem!important;line-height:1.2}
+.sidebar-menu{flex:1 1 auto;min-height:0;overflow-y:auto;padding:.4rem 0!important}
+.sidebar-footer{flex:0 0 auto;padding:.6rem 1rem!important}
+@media (max-height:760px){.sidebar-subtitle{display:none}.sidebar-menu a{padding:.5rem 1.2rem!important}}
+</style>
 </body>
 </html>
