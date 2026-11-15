@@ -7674,7 +7674,7 @@ function generateInvoiceBodyHTML(sale, customer) {
 // ==================== PLATAFORMA MULTI-PULPERÍA (ONLG) ====================
 // Modo LOCAL (por defecto): cuentas y datos en este navegador. Para Supabase llena supabaseUrl y supabaseAnonKey.
 const PLATFORM_CONFIG = {
-  supabaseUrl: 'https://dixaoqpgcybotjlbvspa.supabase.co/rest/v1/',        /* ← PEGA AQUÍ tu Project URL: https://xxxx.supabase.co */
+  supabaseUrl: 'https://dixaoqpgcybotjlbvspa.supabase.co',        /* ← PEGA AQUÍ tu Project URL: https://xxxx.supabase.co */
   supabaseAnonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRpeGFvcXBnY3lib3RqbGJ2c3BhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ2OTY5NjksImV4cCI6MjExMDI3Mjk2OX0.N-jJ-ZGxYN2nGY-heGtzoipabD9p4_bV8cTkz52RdcA',    /* ← PEGA AQUÍ tu anon public key. Vacío = modo local */
   googleClientId: '',                             // ID de cliente de Google (Google Cloud → Credenciales)
   paypalClientId: 'AYKXA-wmZ-XGhiMoRimAMq-gDWP2DzTS_iQvgesEXVbncMELw91sAqrQ61kCFx2e8tT4zgup-tOrQC1g',// Cliente ID de PayPal (developer.paypal.com)
@@ -9714,6 +9714,85 @@ pfProceed = async function (acc) {
     } catch (e) { console.error(e); }
     return _pfProceedV13.apply(this, arguments);
 };
+
+
+/* ==================== PARCHE ONLG: FLUJO DE MEMBRESÍA ====================
+   1) Desactiva el inicio automático de prueba.
+   2) Después de iniciar sesión SIEMPRE muestra membresía/planes.
+   3) Solo permite abrir inventario mediante el botón explícito cuando
+      la cuenta ya tiene acceso vigente.
+   IMPORTANTE: los días hábiles y la aprobación de pagos deben validarse
+   en Supabase (SQL/RPC/Edge Function); nunca se confían al navegador.
+========================================================================= */
+(function ONLG_MEMBERSHIP_GATE_PATCH(){
+    PLATFORM_CONFIG.autoStartTrial = false;
+    PLATFORM_CONFIG.trialDays = 13;
+
+    const _onlgOldTrial = pfStartTrial;
+    pfStartTrial = async function(){
+        if (!cloudOn()) return pfMsg('Acceso bloqueado: conecta Supabase para iniciar una prueba segura.');
+        try { await sbReady(); }
+        catch(e) { return pfMsg('No se pudo conectar con Supabase. Intenta de nuevo.'); }
+        return _onlgOldTrial.apply(this, arguments);
+    };
+
+    // Reemplaza todos los wrappers anteriores de pfProceed para que ninguno
+    // inicie automáticamente la prueba ni abra el inventario al autenticar.
+    pfProceed = async function(acc){
+        if (!cloudOn()) return pfMsg('El sistema requiere Supabase activo. No se permite entrar en modo local.');
+        if (!acc || !acc.id) return pfMsg('No se encontró tu cuenta. Cierra sesión e inténtalo de nuevo.');
+        pfAcc = acc;
+        try {
+            await sbReady();
+            await pfRefreshStatus(acc);
+            pfApplyDiscount();
+        } catch(e) {
+            console.error('ONLG membership status:', e);
+            return pfMsg('No se pudo verificar tu membresía en el servidor. No se habilitó el inventario.');
+        }
+
+        // Siempre aterriza primero en la pantalla de planes/prueba.
+        pfView('plans');
+        const who = gid('pfWho');
+        if (who) who.textContent = (acc.business || 'Tu negocio') + ' · ' + (acc.email || '') + ' — elige una prueba o un plan para continuar.';
+        const pay = gid('pfPay');
+        if (pay) pay.style.display = 'none';
+        try { pfRenderPlans(); } catch(e) { console.warn(e); }
+        try { pfPlansExtras(acc); } catch(e) { console.warn(e); }
+
+        // Si ya existe acceso pagado/prueba vigente, se ofrece entrada manual.
+        const accessBox = gid('onlgMembershipAccess');
+        if (accessBox) accessBox.remove();
+        const sec = document.querySelector('#pf_plans .pf-sec') || gid('pf_plans');
+        if (sec && pfActive(acc)) {
+            const box = document.createElement('div');
+            box.id = 'onlgMembershipAccess';
+            box.className = 'pf-promo ok';
+            box.innerHTML = '<b>Tu acceso está vigente</b><p>Tu membresía o prueba está activa. El inventario no se abrirá automáticamente.</p><button type="button" class="pf-btn" id="onlgEnterInventory">Entrar al inventario</button>';
+            sec.prepend(box);
+            gid('onlgEnterInventory').addEventListener('click', function(){
+                const fresh = pfDB().accounts.find(x => x.id === acc.id);
+                if (!fresh || !pfActive(fresh)) return pfMsg('Tu acceso ya no está vigente. Actualiza tu membresía.');
+                pfEnter(fresh, 'owner');
+            });
+        }
+        return true;
+    };
+
+    // En producción, una falla de Supabase debe cerrar el acceso, no usar
+    // cuentas guardadas en localStorage como si fueran válidas.
+    const _onlgRegister = pfRegister;
+    pfRegister = async function(){
+        if (!cloudOn()) return pfMsg('Registro deshabilitado: configura Supabase antes de publicar.');
+        return _onlgRegister.apply(this, arguments);
+    };
+    const _onlgLogin = pfLogin;
+    pfLogin = async function(){
+        if (!cloudOn()) return pfMsg('Inicio de sesión deshabilitado: configura Supabase antes de publicar.');
+        return _onlgLogin.apply(this, arguments);
+    };
+})();
+
 </script>
 <style id="v12style">
 /* Menú lateral: el encabezado (logo y nombre) y el pie quedan fijos; solo el menú se desplaza */
