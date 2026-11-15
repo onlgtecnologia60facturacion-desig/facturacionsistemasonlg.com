@@ -1765,7 +1765,14 @@ body{font-family:'Manrope','Segoe UI',Tahoma,sans-serif;background:#f1f6fe}
                             </div>
                             <div class="form-group">
                                 <label>Método de Pago</label>
-                                \1
+                                <select id="paymentMethod" onchange="toggleSaleTypeUI()">
+                                    <option value="cash">Efectivo</option>
+                                    <option value="card">Tarjeta</option>
+                                    <option value="check">Cheque</option>
+                                    <option value="transfer">Transferencia</option>
+                                    <option value="credit">Crédito (Fiado)</option>
+                                </select>
+                            </div>
                             <div class="form-group"><label>RTN del cliente (14 dígitos)</label><input type="text" id="saleCustomerRtn" inputmode="numeric" maxlength="17" placeholder="Vacío = Consumidor Final"></div>
                         </div>
                     </div>
@@ -2444,7 +2451,9 @@ body{font-family:'Manrope','Segoe UI',Tahoma,sans-serif;background:#f1f6fe}
                     <div class="form-row">
                         <div class="form-group">
                             <label>ISV/IVA (%)</label>
-                            \1
+                            <input type="number" id="settingsTaxRate" placeholder="15" step="0.01" min="0" max="100">
+                        </div>
+                    </div>
                     <div class="form-row">
                         <div class="form-group"><label>CAI (autorizado por el SAR)</label><input type="text" id="settingsCAI" maxlength="40" placeholder="XXXXXX-XXXXXX-XXXXXX-XXXXXX-XXXXXX-XX" style="text-transform:uppercase"></div>
                         <div class="form-group"><label>Fecha límite de emisión</label><input type="date" id="settingsFiscalDeadline"></div>
@@ -3070,18 +3079,36 @@ function legacyHashPass(pw) {
     return btoa(unescape(encodeURIComponent('onlg::' + pw)));
 }
 
+function randomSecret() {
+    return Array.from(crypto.getRandomValues(new Uint8Array(18))).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// El administrador (dueño) entra directo desde la portada con su correo y contraseña, así que su
+// usuario interno NO necesita una clave conocida. Antes se creaba "admin" / "admin123": cualquier
+// empleado con el código de la pulpería podía entrar como administrador. Ahora la clave es aleatoria
+// y las cuentas que aún tenían "admin123" se corrigen automáticamente.
 async function ensureDefaultAdmin() {
     if (!appData.users || appData.users.length === 0) {
         appData.users = [{
             id: Date.now(),
             name: 'Administrador',
             username: 'admin',
-            password: await hashPass('admin123'),
+            password: await hashPass(randomSecret()),
             role: 'admin',
             access: { status: 'active', plan: 'Administrador', expiresAt: null, paidAt: new Date().toISOString() }
         }];
         saveData();
+        return;
     }
+    const weak = await hashPass('admin123'), weakLegacy = legacyHashPass('admin123');
+    let changed = false;
+    for (const u of appData.users) {
+        if (u.role === 'admin' && (u.password === weak || u.password === weakLegacy)) {
+            u.password = await hashPass(randomSecret());
+            changed = true;
+        }
+    }
+    if (changed) saveData();
 }
 
 function toggleLoginPasswordVisibility() {
@@ -5477,10 +5504,35 @@ function printCreditAccountStatement() {
         </html>
     `;
 
-    const printWindow = window.open('', '', 'width=800,height=600');
-    printWindow.document.write(html);
-    printWindow.document.close();
-    printWindow.print();
+    openDocWindow(html, 800, 600, true);
+}
+
+// ==================== IMPRESIÓN SEGURA (sin depender de ventanas emergentes) ====================
+// Si el navegador bloquea window.open (muy común en celulares), antes la venta se guardaba pero
+// salía el error "No se pudo completar la venta". Ahora se usa un marco oculto como respaldo.
+function openDocWindow(html, width, height, autoPrint) {
+    let win = null;
+    try { win = window.open('', '', 'width=' + width + ',height=' + height); } catch (e) { win = null; }
+    if (win && win.document) {
+        win.document.write(html);
+        win.document.close();
+        if (autoPrint) { try { win.focus(); win.print(); } catch (e) {} }
+        return win;
+    }
+    if (!autoPrint) {
+        alert('Tu navegador bloqueó la ventana emergente. Permite las ventanas emergentes de este sitio para ver el documento.');
+        return null;
+    }
+    const frame = document.createElement('iframe');
+    frame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden';
+    document.body.appendChild(frame);
+    try {
+        frame.contentDocument.open();
+        frame.contentDocument.write(html);
+        frame.contentDocument.close();
+        setTimeout(() => { try { frame.contentWindow.focus(); frame.contentWindow.print(); } catch (e) {} setTimeout(() => frame.remove(), 60000); }, 400);
+    } catch (e) { frame.remove(); alert('No se pudo abrir la impresión. Permite las ventanas emergentes e inténtalo de nuevo.'); }
+    return frame.contentWindow;
 }
 
 // ==================== HISTORY FUNCTIONS ====================
@@ -5981,9 +6033,7 @@ function buildReportDocumentHtml(options) {
 // pestaña nueva para revisarlo, con un botón para imprimirlo si se quiere.
 function viewReport() {
     const html = buildReportDocumentHtml({ title: 'REPORTE COMPLETO' });
-    const win = window.open('', '', 'width=900,height=700');
-    win.document.write(html);
-    win.document.close();
+    openDocWindow(html, 900, 700, false);
 }
 
 // "Imprimir Reporte del Día": genera el reporte SOLO con las ventas de hoy
@@ -5991,10 +6041,7 @@ function viewReport() {
 function printDailyReport() {
     const today = new Date().toISOString().split('T')[0];
     const html = buildReportDocumentHtml({ title: 'REPORTE DEL DÍA', dateFrom: today, dateTo: today });
-    const win = window.open('', '', 'width=900,height=700');
-    win.document.write(html);
-    win.document.close();
-    win.print();
+    openDocWindow(html, 900, 700, true);
 }
 
 // "PDF - Reporte Completo": el mismo reporte histórico completo, pero
@@ -6162,10 +6209,7 @@ function printInvoice(sale) {
     
     const html = generateInvoiceHTML(sale, customer);
     
-    const printWindow = window.open('', '', 'width=800,height=600');
-    printWindow.document.write(html);
-    printWindow.document.close();
-    printWindow.print();
+    openDocWindow(html, 800, 600, true);
 }
 
 function printSaleInvoice(saleId) {
@@ -7110,8 +7154,7 @@ function viewCashReport(id) {
 }
 function printCashReport(id) {
     const x = appData.cashSessions.find(v => v.id === id); if (!x) return;
-    const w = window.open('', '', 'width=800,height=600');
-    w.document.write(wrapReceiptDoc(t('CUADRE DE CAJA') + ' ' + x.number, cashReportBody(x))); w.document.close(); w.print();
+    openDocWindow(wrapReceiptDoc(t('CUADRE DE CAJA') + ' ' + x.number, cashReportBody(x)), 800, 600, true);
 }
 // Al cerrar sesión con la caja abierta, se recuerda cuadrarla.
 const _logoutOrig = logout;
@@ -9472,7 +9515,7 @@ pfOtpVerify = async function () {
         const L = pfLocalOtp; if (!L.code || Date.now() > L.exp) return pfMsg('El código venció. Pide uno nuevo.');
         if (++L.tries > 5) { L.code = ''; return pfMsg('Demasiados intentos. Pide un código nuevo.'); }
         if (tok !== L.code) return pfMsg('Código incorrecto.');
-        L.ok = L.mail; L.code = ''; pfOtpClose(); pfView('auth'); pfTab('up'); pfMsg('¡Correo confirmado!', true); return pfRegister();
+        L.ok = L.mail; L.code = ''; pfOtpClose(); pfView('auth'); pfTab('up'); pfMsg('¡Correo confirmado!', true); _pfShownAt = 0; return pfRegister();
     }
     await sbReady(); let r = null;
     for (const ty of [pfOtpView.type || 'signup', pfOtpView.type === 'email' ? 'signup' : 'email']) { r = await cloud().auth.verifyOtp({ email: pfOtpView.mail, token: tok, type: ty }); if (!r.error && r.data.user) break; }
@@ -9577,19 +9620,32 @@ ivtRender = function (n, col, sale, cu, plain) {
     return h;
 };
 
-/* ---- Al abrir la página siempre se ve la página principal ---- */
+/* ---- Portada pública como primera pantalla en cada apertura ----
+   Solo se entra directamente al sistema cuando la navegación viene de
+   un inicio de sesión/registro/OAuth o del botón "Entrar a mi sistema". */
 const _pe12 = pfEnter; pfEnter = async function () { sessionStorage.setItem('pfGo', '1'); return _pe12.apply(this, arguments); };
 function pfGoSystem() { sessionStorage.setItem('pfGo', '1'); location.reload(); }
 const _boot12 = pfAfterBoot;
 pfAfterBoot = async function () {
-    const go = sessionStorage.getItem('pfGo') || sessionStorage.getItem('pfOAuth'); sessionStorage.removeItem('pfGo');
-    if (!go && sessionStorage.getItem('activeTenant')) {
-        pfView('land');
+    const go = sessionStorage.getItem('pfGo') || sessionStorage.getItem('pfOAuth');
+    sessionStorage.removeItem('pfGo');
+
+    // La navegación intencional para entrar al sistema conserva el flujo normal.
+    if (go) return _boot12.apply(this, arguments);
+
+    // Ejecuta la inicialización normal (cuenta, membresía, datos y permisos),
+    // pero vuelve a colocar la portada por encima como pantalla inicial.
+    await _boot12.apply(this, arguments);
+    pfView('land');
+
+    // Si ya existe una pulpería activa, ofrece continuar al sistema sin
+    // iniciar la sesión operativa automáticamente.
+    if (sessionStorage.getItem('activeTenant')) {
         const nav = document.querySelector('.pf-nav > div:last-child');
-        if (nav && !gid('pfEnterBtn')) nav.insertAdjacentHTML('afterbegin', '<button id="pfEnterBtn" class="pf-btn" onclick="pfGoSystem()"><i class="fas fa-right-to-bracket"></i> Entrar a mi sistema</button> ');
-        return;
+        if (nav && !gid('pfEnterBtn')) {
+            nav.insertAdjacentHTML('afterbegin', '<button id="pfEnterBtn" class="pf-btn" onclick="pfGoSystem()"><i class="fas fa-right-to-bracket"></i> Entrar a mi sistema</button> ');
+        }
     }
-    return _boot12.apply(this, arguments);
 };
 
 /* ---- Métodos de pago de Honduras (enlace de pago de cada pasarela + confirmación con referencia) ---- */
@@ -9638,8 +9694,26 @@ async function pfGwSend(id) {
 }
 window.addEventListener('DOMContentLoaded', () => setTimeout(() => { const g = document.querySelector('#pfPlans .pf-grid'); if (g && !gid('pfPayChips')) g.insertAdjacentHTML('afterend', '<p id="pfPayChips" style="text-align:center;color:#475569;margin-top:1rem"><b>Aceptamos:</b> PixelPay · Clinpays · BAC Credomatic · Banco Promerica · Ficohsa · Transferencia bancaria · PayPal · Efectivo</p>'); }, 200));
 
-/* La portada se muestra desde el primer instante; solo se oculta si vienes de "Entrar a mi sistema", empleado o Google */
-try { if (!sessionStorage.getItem('pfGo') && !sessionStorage.getItem('pfOAuth')) pfView('land'); } catch (e) { console.warn(e); }
+/* ---- v13: correo + contraseña → entra DIRECTO al sistema como administrador ----
+   - Cuenta con membresía/prueba vigente: entra de una vez (sin segunda pantalla de usuario/contraseña).
+   - Cuenta nueva que nunca usó la prueba gratis: se inicia la prueba automáticamente y entra de una vez.
+   - Cuenta vencida: se muestran los planes para renovar (no se puede entrar sin membresía).
+   Para desactivar la prueba automática pon PLATFORM_CONFIG.autoStartTrial = false. */
+PLATFORM_CONFIG.autoStartTrial = true;
+const _pfProceedV13 = pfProceed;
+pfProceed = async function (acc) {
+    try {
+        if (PLATFORM_CONFIG.autoStartTrial && acc && !pfActive(acc) && !acc.trialUsed && !acc.expiresAt) {
+            await pfRefreshStatus(acc);
+            if (!(PF_STATUS && PF_STATUS.trial_used)) {
+                pfAcc = acc;
+                await pfStartTrial();
+                if (sessionStorage.getItem('activeTenant') === acc.id) return;   // ya entró
+            }
+        }
+    } catch (e) { console.error(e); }
+    return _pfProceedV13.apply(this, arguments);
+};
 </script>
 <style id="v12style">
 /* Menú lateral: el encabezado (logo y nombre) y el pie quedan fijos; solo el menú se desplaza */
