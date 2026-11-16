@@ -1438,7 +1438,9 @@ body{font-family:'Manrope','Segoe UI',Tahoma,sans-serif;background:#f1f6fe}
 #platformGate .inv-demo{max-width:900px;margin:1rem auto 0;padding:1.2rem}
 </style>
 </head>
-    <script id="v14-planes-y-sesion">
+<body>
+
+<script id="v14-planes-y-sesion">
 /* ===== v14: planes Estándar / Crecimiento / Premium + Finalizar sesión sin borrar datos ===== */
 (function () {
   const RATE = PLATFORM_CONFIG.lpsRate || 26.5;
@@ -1536,7 +1538,17 @@ pfView = function () { const r = _pfView14.apply(this, arguments); pfFootFix(); 
 document.addEventListener('click', e => { const b = e.target.closest('#pfOut'); if (b) { e.preventDefault(); e.stopImmediatePropagation(); pfSafeSignOut(); } }, true);
 [500, 1500, 3000].forEach(ms => setTimeout(pfFootFix, ms));
 </script>
-<body>
+
+
+
+
+
+
+
+
+
+
+    
 
 <div id="backupReminderBanner" aria-live="polite">
     <div class="card">
