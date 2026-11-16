@@ -8861,7 +8861,7 @@ window.addEventListener('DOMContentLoaded', () => { pfReviewsLoad(); pfLoadPlans
 
 
 // ==================== v7: PRUEBA GRATIS, INVITACIONES, CANCELACIÓN, AYUDA ====================
-PLATFORM_CONFIG.trialDays = 13;        // se sobrescribe con la tabla app_config si hay base de datos
+PLATFORM_CONFIG.trialDays = 22;        // se sobrescribe con la tabla app_config si hay base de datos
 PLATFORM_CONFIG.referralPct = 19.56;   // descuento para quien invita (próxima compra)
 
 let PF_BASE_PLANS = null, PF_STATUS = null;
@@ -9672,7 +9672,7 @@ pfChoose = function (id) {
     const m = (fn, ic, t0, sm) => '<button class="pf-m" onclick="pfSel(this);' + fn + '"><i class="' + ic + '"></i><span>' + t0 + '</span><small>' + sm + '</small></button>';
     box.innerHTML = '<div class="pf-sum"><div><small>Plan elegido</small><b>' + pfPlan.name + '</b></div><div style="text-align:right"><small>Total a pagar</small><b>' + pfAmt(pfPlan) + '</b><br><small>≈ $' + pfFmt(pfPlan.price) + ' USD</small></div></div><h4 class="pf-h">Elige tu método de pago</h4>' +
         '<div class="pf-methods" style="grid-template-columns:repeat(2,1fr)">' +
-        m('pfHnCards()', 'fas fa-credit-card', 'Tarjetas hondureñas', 'PixelPay, BAC, Ficohsa y más') +
+        m('pfHnCards()', 'fas fa-credit-card', 'Tarjeta', 'Crédito o débito') +
         m('pfCashInfo()', 'fas fa-money-bill-wave', 'Efectivo', 'Te visitamos') +
         m('pfPaypal()', 'fab fa-paypal', 'PayPal', 'Tarjeta o saldo') +
         m('pfGPay()', 'fab fa-google-pay', 'Google Pay', 'Pago rápido') +
@@ -9680,11 +9680,41 @@ pfChoose = function (id) {
     box.scrollIntoView({ behavior: 'smooth' });
 };
 function pfHnCards() {
-    const m = (fn, ic, t0, sm) => '<button class="pf-m" onclick="pfSel(this);' + fn + '"><i class="' + ic + '"></i><span>' + t0 + '</span><small>' + sm + '</small></button>';
-    gid('payArea').innerHTML = '<div class="pf-info" style="display:block;margin-bottom:.6rem"><b>Tarjetas hondureñas</b><br>Elige la pasarela con la que quieres pagar. Aceptan Visa, Mastercard y débito locales.</div>' +
-        '<div class="pf-methods" style="grid-template-columns:repeat(2,1fr)">' +
-        PLATFORM_CONFIG.gateways.map(g => m("pfGateway('" + g.id + "')", 'fas ' + g.icon, g.name, g.sub)).join('') +
+    gid('payArea').innerHTML =
+        '<div style="max-width:420px;margin:.4rem auto 0;text-align:left">' +
+        '<label class="pf-l">Número de tarjeta</label>' +
+        '<input id="hnCardNum" inputmode="numeric" autocomplete="cc-number" placeholder="1234 1234 1234 1234" maxlength="19" oninput="this.value=this.value.replace(/[^0-9]/g,\'\').replace(/(.{4})/g,\'$1 \').trim()">' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-top:.15rem">' +
+        '<div><label class="pf-l">Fecha de caducidad</label><input id="hnCardExp" inputmode="numeric" autocomplete="cc-exp" placeholder="MM / AA" maxlength="7" oninput="var v=this.value.replace(/[^0-9]/g,\'\').slice(0,4);this.value=v.length>2?v.slice(0,2)+\' / \'+v.slice(2):v"></div>' +
+        '<div><label class="pf-l">Código de seguridad</label><input id="hnCardCvc" inputmode="numeric" autocomplete="cc-csc" placeholder="CVC" maxlength="4" oninput="this.value=this.value.replace(/[^0-9]/g,\'\')"></div>' +
+        '</div>' +
+        '<label style="display:flex;gap:.5rem;align-items:center;font-size:.85rem;margin:.85rem 0 .5rem;color:#475569"><input type="checkbox" id="hnSaveCard" style="width:auto"> Guardar los datos de pago para futuras compras</label>' +
+        '<button class="pf-btn pf-full" onclick="pfHnCardPay()"><i class="fas fa-lock"></i> Pagar ' + pfAmt(pfPlan) + '</button>' +
+        '<p style="font-size:.78rem;color:#64748b;margin:.55rem 0 0;text-align:center"><i class="fas fa-shield-halved"></i> Pago seguro. No almacenamos el número completo de tu tarjeta.</p>' +
         '</div>';
+}
+async function pfHnCardPay() {
+    const num = (gid('hnCardNum').value || '').replace(/\s/g, '');
+    const exp = (gid('hnCardExp').value || '').replace(/\s/g, '');
+    const cvc = (gid('hnCardCvc').value || '').trim();
+    if (num.length < 13 || num.length > 19) return pfMsg('Revisa el número de tarjeta.');
+    if (!/^\d{2}\/\d{2}$/.test(exp)) return pfMsg('Escribe la fecha como MM / AA.');
+    if (cvc.length < 3) return pfMsg('Escribe el código de seguridad (CVC).');
+    const last4 = num.slice(-4);
+    const pid = 'p' + Date.now() + Math.random().toString(36).slice(2, 5);
+    const data = { gateway: 'tarjeta', last4: last4, exp: exp };
+    if (cloudOn()) {
+        await sbReady();
+        const r = await cloud().from('payments').insert({ id: pid, tenant_id: pfAcc.id, plan: pfPlan.id, months: pfPlan.months, price: pfPlan.price, method: 'Tarjeta', data });
+        if (r.error) return pfMsg(r.error.code === '23505' ? 'Ese pago ya fue registrado.' : 'No se pudo registrar el pago: ' + r.error.message);
+    } else {
+        const db = pfDB();
+        db.payments.push({ id: pid, accId: pfAcc.id, plan: pfPlan.id, months: pfPlan.months, price: pfPlan.price, priceLps: pfPlan.lps, method: 'Tarjeta', status: 'pending', last4: last4, at: new Date().toISOString() });
+        pfSave(db);
+    }
+    // No guardamos el número completo ni el CVC
+    pfPayDone({ status: 'pending' }, pfAcc);
+    pfMsg('Pago con tarjeta registrado (•••• ' + last4 + '). Queda pendiente de confirmación.', true);
 }
 function pfGateway(id) {
     const g = PLATFORM_CONFIG.gateways.find(x => x.id === id), u = pfGwUrl(g);
@@ -9707,7 +9737,7 @@ async function pfGwSend(id) {
     }
     pfPayDone({ status: 'pending' }, pfAcc);
 }
-window.addEventListener('DOMContentLoaded', () => setTimeout(() => { const g = document.querySelector('#pfPlans .pf-grid'); if (g && !gid('pfPayChips')) g.insertAdjacentHTML('afterend', '<p id="pfPayChips" style="text-align:center;color:#475569;margin-top:1rem"><b>Aceptamos:</b> Tarjetas hondureñas · PayPal · Google Pay · Efectivo</p>'); }, 200));
+window.addEventListener('DOMContentLoaded', () => setTimeout(() => { const g = document.querySelector('#pfPlans .pf-grid'); if (g && !gid('pfPayChips')) g.insertAdjacentHTML('afterend', '<p id="pfPayChips" style="text-align:center;color:#475569;margin-top:1rem"><b>Aceptamos:</b> Tarjeta · PayPal · Google Pay · Efectivo</p>'); }, 200));
 
 /* ---- v13: correo + contraseña → entra DIRECTO al sistema como administrador ----
    - Cuenta con membresía/prueba vigente: entra de una vez (sin segunda pantalla de usuario/contraseña).
@@ -9741,7 +9771,7 @@ pfProceed = async function (acc) {
 ========================================================================= */
 (function ONLG_MEMBERSHIP_GATE_PATCH(){
     PLATFORM_CONFIG.autoStartTrial = false;
-    PLATFORM_CONFIG.trialDays = 13;
+    PLATFORM_CONFIG.trialDays = 22;
 
     const _onlgOldTrial = pfStartTrial;
     pfStartTrial = async function(){
