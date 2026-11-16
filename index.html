@@ -7715,7 +7715,7 @@ function pfPassField(id,ph){ return '<div class="pf-pw"><input type="password" i
 (function buildGate(){
   const logo=(gid('platformBrandLogo')||{}).src||'';
   const feats=[['fa-cash-register','Facturación y TPV','Tickets y facturas en segundos, con descuentos, ISV y varios métodos de pago.'],['fa-boxes-stacked','Inventario','Productos, stock mínimo, alertas de stock bajo y búsqueda rápida.'],['fa-vault','Caja y cuadre','Apertura, cierre y cuadre de caja por empleado.'],['fa-users','Clientes y crédito','Cuentas de crédito, deudas y abonos por cliente.'],['fa-truck','Proveedores','Precios de proveedores y comparación de costos.'],['fa-gift','Promos y campañas','Ofertas para vender más en tu pulpería.'],['fa-chart-line','Reportes','Ventas por día, PDF, Excel e impresión.'],['fa-user-lock','Empleados con roles','Cada empleado entra con su usuario y ve solo lo suyo.'],['fa-language','Idiomas y moneda','Interfaz multi-idioma y tu moneda local.']];
-  const plans='';
+  const plans=PLATFORM_CONFIG.plans.map(p=>pfPlanCard(p,"pfView('auth');pfTab('up')",'Empezar')).join('');
   const d=document.createElement('div'); d.id='platformGate'; d.style.display='none';
   d.innerHTML='<style>#platformGate{position:fixed;inset:0;z-index:20000;overflow:auto;background:#f8fafc;color:#1e293b}#platformGate *{box-sizing:border-box}.pf-nav{display:flex;align-items:center;justify-content:space-between;padding:.8rem 1.2rem;background:#fff;position:sticky;top:0;box-shadow:0 1px 6px #0002;z-index:2}.pf-nav img{height:54px;margin-right:.6rem;vertical-align:middle}.pf-hero{background:linear-gradient(135deg,#1e40af,#1e293b);color:#fff;text-align:center;padding:4rem 1rem}.pf-hero h1{font-size:clamp(1.8rem,5vw,3rem);margin:.2rem 0}.pf-sec{max-width:1050px;margin:0 auto;padding:2.5rem 1rem}.pf-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:1rem}.pf-card{background:#fff;border-radius:12px;padding:1.2rem;box-shadow:0 2px 10px #0001;text-align:center}.pf-card i.fa-solid,.pf-card i.fas{font-size:1.8rem;color:#1e40af}.pf-price{font-size:2rem;font-weight:800;margin:.5rem 0}.pf-btn{background:#1e40af;color:#fff;border:0;border-radius:8px;padding:.7rem 1.2rem;font-weight:700;cursor:pointer;font-size:.95rem}.pf-btn.alt{background:#fff;color:#1e40af;border:1px solid #1e40af}.pf-box{max-width:430px;margin:2rem auto;background:#fff;border-radius:14px;padding:1.6rem;box-shadow:0 10px 30px #0002}.pf-box input,.pf-box select{width:100%;padding:.7rem;border:1px solid #cbd5e1;border-radius:8px;margin:.25rem 0 .7rem;font:inherit}.pf-pw{position:relative}.pf-pw button{position:absolute;right:.5rem;top:.45rem;border:0;background:none;cursor:pointer;font-size:1rem}.pf-tabs{display:flex;gap:.3rem;margin-bottom:1rem}.pf-tab{flex:1;padding:.55rem;border:0;border-radius:8px;background:#e2e8f0;cursor:pointer;font-weight:600}.pf-tab.on{background:#1e40af;color:#fff}#pfMsg{display:none;font-size:.88rem;margin:.5rem auto;text-align:center;max-width:430px}.pf-foot{text-align:center;padding:1.5rem;color:#64748b;font-size:.8rem}table.pf-t{width:100%;border-collapse:collapse;font-size:.85rem}.pf-t td,.pf-t th{padding:.4rem;border-bottom:1px solid #e2e8f0;text-align:left}</style>'+
   '<div class="pf-nav"><div><img src="'+logo+'" alt="ONLG"><b>ONLG Technology</b></div><div><div class="pf-dd"><button class="pf-btn alt" type="button" onclick="pfHelpToggle(event)">Ayuda ▾</button><div class="pf-ddm" id="pfHelpMenu"></div></div> <button class="pf-btn alt" onclick="pfView(\'auth\');pfTab(\'in\')">Iniciar sesión</button> <button class="pf-btn" onclick="pfView(\'auth\');pfTab(\'up\')">Crear cuenta</button></div></div>'+
@@ -7724,7 +7724,7 @@ function pfPassField(id,ph){ return '<div class="pf-pw"><input type="password" i
   '<div class="pf-sec" id="pfReviews"></div>'+
   '<div class="pf-sec" id="pfFaq"></div>'+
   '<div class="pf-sec"><h2 style="text-align:center">Sobre ONLG Technology</h2><p style="text-align:center;max-width:700px;margin:auto;color:#475569">Somos una empresa de <b>tecnología, diseño e innovación</b>. Creamos software y sistemas a la medida para negocios de cualquier tamaño, desde Honduras para el mundo.</p></div>'+
-  '<div class="pf-sec" id="pfPlans"><h2 style="text-align:center">Precios claros para tu pulpería</h2><p style="text-align:center;color:#475569">Estándar, Crecimiento y Premium. Elige 1, 3, 6 o 12 meses. Paga con tarjeta de crédito o débito.</p><div class="pf-grid">'+plans+'</div></div>'+
+  '<div class="pf-sec" id="pfPlans"><h2 style="text-align:center">Precios claros para tu pulpería</h2><p style="text-align:center;color:#475569">Desde <b>L 100 al mes</b>. Pruebas gratis, sin contratos y cancelas cuando quieras. Pagas por transferencia bancaria o PayPal.</p><div class="pf-grid">'+plans+'</div></div>'+
   '<div class="pf-foot">© 2026 EMPRESA DE TECNOLOGIA ONLG · <a href="#" onclick="pfOwner();return false;">Acceso propietario</a></div></div>'+
   '<div id="pf_auth" style="display:none"><div class="pf-box"><div style="position:absolute;left:-9999px;top:-9999px" aria-hidden="true"><label>No llenar</label><input id="pf_hp" tabindex="-1" autocomplete="off"></div><div id="pfCaptcha" style="min-height:0;margin-bottom:.5rem"></div><div class="pf-tabs"><button id="pfB_in" class="pf-tab on" onclick="pfTab(\'in\')">Entrar</button><button id="pfB_up" class="pf-tab" onclick="pfTab(\'up\')">Crear cuenta</button><button id="pfB_cash" class="pf-tab" onclick="pfTab(\'cash\')">Soy empleado</button></div>'+
   '<div id="pfT_in"><label>Correo</label><input type="email" id="inMail">'+'<label>Contraseña</label>'+pfPassField('inPass','Contraseña')+'<button class="pf-btn" style="width:100%" onclick="pfLogin()">Entrar</button><button class="pf-btn alt" style="width:100%;margin-top:.6rem" onclick="pfGoogle()"><i class="fab fa-google"></i> Continuar con Google</button></div>'+
@@ -8671,7 +8671,7 @@ async function cloudFlush() {
             _ver = d.version; _retry = 0; cloudStatus('☁ Guardado en la nube ✓'); break;
         }
     } catch (e) {
-        console.error(e); if (String(e.message) === 'plan_limit') { cloudStatus('⚠ Se alcanzó el límite de usuarios de este plan.', true); alert('Se alcanzó el límite de usuarios configurado para este plan. Revisa el plan o contacta al propietario.'); return; } cloudStatus('⚠ Sin conexión con la base de datos. Reintentando…', true); _retry++; window._dirty = true; setTimeout(cloudFlush, Math.min(30000, 2000 * _retry));
+        console.error(e); if (String(e.message) === 'plan_limit') { cloudStatus('⚠ Tu plan Regular permite solo 2 usuarios.', true); alert('Tu plan Regular permite solo 2 usuarios (tú + 1 empleado). Elimina un usuario o cambia al plan Completo para guardar.'); return; } cloudStatus('⚠ Sin conexión con la base de datos. Reintentando…', true); _retry++; window._dirty = true; setTimeout(cloudFlush, Math.min(30000, 2000 * _retry));
     } finally { _pushing = false; if (_pendingPush) { _pendingPush = false; setTimeout(cloudFlush, 300); } }
 }
 cloudPush = function () { if (!cloudOn() || !sessionStorage.getItem('activeTenant')) return; window._dirty = true; clearTimeout(window._cp); window._cp = setTimeout(cloudFlush, 800); };
@@ -8784,7 +8784,7 @@ async function pfReviewsLoad() {
     }
     const avg = rows.length ? rows.reduce((s, x) => s + Number(x.rating || 5), 0) / rows.length : 0;
     box.innerHTML = '<h2 style="text-align:center">Lo que dicen las pulperías</h2>' +
-        '<div class="pf-trust"><span>🇭🇳 Hecho en Honduras</span><span>☁ Tus datos guardados en la nube</span><span>💳 Pago con tarjeta</span><span>🔒 Acceso protegido</span></div>' +
+        '<div class="pf-trust"><span>🇭🇳 Hecho en Honduras</span><span>☁ Tus datos guardados en la nube</span><span>🏦 Paga por PayPal o transferencia</span><span>🔒 Acceso protegido</span></div>' +
         (rows.length ? '<p class="rv-avg"><span>' + pfStars(avg) + '</span> <b>' + avg.toFixed(1) + '</b> de 5 · ' + rows.length + (rows.length === 1 ? ' reseña' : ' reseñas') + '</p><div class="pf-grid">' +
             rows.map(x => '<div class="pf-card rv"><div class="rv-st">' + pfStars(x.rating) + '</div><p>“' + escapeHtml(x.text) + '”</p><div class="rv-by"><b>' + escapeHtml(x.name) + '</b>' + (x.business ? '<br><small>' + escapeHtml(x.business) + '</small>' : '') + '</div></div>').join('') + '</div>'
             : '<p style="text-align:center;color:#475569">Aquí aparecen las opiniones de pulperías reales que usan el sistema. ¡Sé de los primeros en contar tu experiencia!</p>') +
@@ -9268,17 +9268,17 @@ window.addEventListener('DOMContentLoaded', function () { setTimeout(function ()
         tip: _I('Usa el menú de la izquierda para moverte. Si te pierdes, toca el botón ❓.', 'Use the menu on the left to move around. If you get lost, tap the ❓ button.', 'Use o menu à esquerda para navegar. Se se perder, toque no botão ❓.', 'Utilisez le menu de gauche pour naviguer. Si vous êtes perdu, touchez le bouton ❓.') };
     const B = { ico: 'fa-ticket', page: null, kw: 'membresia plan prueba gratis cancelar precio pagar invitar descuento membership trial price cancel',
         title: _I('Tu membresía y prueba gratis', 'Your membership and free trial', 'Sua assinatura e teste grátis', 'Votre abonnement et essai gratuit'),
-        body: _I('Empiezas con 13 días de prueba gratis. Después eliges entre Estándar, Crecimiento y Premium, con duración de 1, 3, 6 o 12 meses. No hay cobros automáticos: puedes cancelar cuando quieras con el enlace "Cancelar membresía" de la barra inferior y tus datos se conservan.',
-            'You start with a 13-day free trial. Then choose Standard, Growth, or Premium for 1, 3, 6, or 12 months. There are no automatic charges: you can cancel any time with the "Cancel membership" link in the bottom bar and your data is kept.',
-            'Você começa com 13 dias de teste grátis. Depois escolhe entre Estándar, Crecimiento e Premium por 1, 3, 6 ou 12 meses. Não há cobranças automáticas: você cancela quando quiser pelo link "Cancelar assinatura" na barra inferior e seus dados são mantidos.',
-            'Vous commencez par 13 jours d\'essai gratuit. Choisissez ensuite Estándar, Crecimiento ou Premium pour 1, 3, 6 ou 12 mois. Aucun prélèvement automatique : vous pouvez annuler à tout moment avec le lien « Annuler l\'abonnement » de la barre du bas et vos données sont conservées.'),
+        body: _I('Empiezas con 13 días de prueba gratis. Después eliges un plan desde L 100 al mes (también hay planes de 3, 6 y 12 meses con ahorro). No hay cobros automáticos: puedes cancelar cuando quieras con el enlace "Cancelar membresía" de la barra inferior y tus datos se conservan.',
+            'You start with a 13-day free trial. Then you pick a plan from L 100 per month (there are also 3, 6 and 12-month plans that save money). There are no automatic charges: you can cancel any time with the "Cancel membership" link in the bottom bar and your data is kept.',
+            'Você começa com 13 dias de teste grátis. Depois escolhe um plano a partir de L 100 por mês (há também planos de 3, 6 e 12 meses com economia). Não há cobranças automáticas: você cancela quando quiser pelo link "Cancelar assinatura" na barra inferior e seus dados são mantidos.',
+            'Vous commencez par 13 jours d\'essai gratuit. Ensuite vous choisissez un forfait à partir de L 100 par mois (il existe aussi des forfaits de 3, 6 et 12 mois plus avantageux). Aucun prélèvement automatique : vous annulez quand vous voulez avec le lien « Annuler l\'abonnement » de la barre du bas et vos données sont conservées.'),
         tip: _I('Con "Invitar y ganar": si alguien que invitas hace su primera compra, recibes 19,56% de descuento en tu próxima compra.', 'With "Invite and earn": if someone you invite makes their first purchase, you get 19.56% off your next purchase.', 'Com "Convidar e ganhar": se alguém que você convidar fizer a primeira compra, você ganha 19,56% de desconto na próxima.', 'Avec « Inviter et gagner » : si une personne invitée fait son premier achat, vous obtenez 19,56 % de réduction sur votre prochain achat.') };
     const C = { ico: 'fa-key', page: null, kw: 'codigo empleados empleado entrar acceso cambiar codigo staff code employee',
         title: _I('Código para tus empleados', 'Code for your employees', 'Código para seus funcionários', 'Code pour vos employés'),
-        body: _I('En la barra inferior ves el código de tu pulpería. Tus empleados entran con "Soy empleado" y su usuario y contraseña. Estándar permite 1 empleado, Crecimiento hasta 5 usuarios y Premium usuarios ilimitados.',
-            'The bottom bar shows your store code. Staff choose "I’m an employee" and sign in with their username and password. Standard allows 1 employee, Growth up to 5 users, and Premium unlimited users.',
-            'A barra inferior mostra o código da loja. A equipe toca em "Sou funcionário" e entra com usuário e senha. Estándar permite 1 funcionário, Crecimiento até 5 usuários e Premium usuários ilimitados.',
-            'Le code de votre magasin apparaît dans la barre inférieure. Le personnel choisit « Je suis employé » et se connecte avec son identifiant et son mot de passe. Estándar permet 1 employé, Crecimiento jusqu’à 5 utilisateurs et Premium un nombre illimité.'),
+        body: _I('En la barra inferior ves el código de 12 letras de tu pulpería. Tus empleados entran con "Soy empleado", escriben ese código y después su usuario y contraseña. Con el plan Regular puedes tener 1 empleado; con el Completo, los que necesites.',
+            'In the bottom bar you can see your store\'s 12-letter code. Your employees sign in with "I\'m an employee", type that code and then their username and password. The Regular plan allows 1 employee; the Complete plan allows as many as you need.',
+            'Na barra inferior você vê o código de 12 letras da sua loja. Seus funcionários entram com "Sou funcionário", digitam esse código e depois seu usuário e senha. O plano Regular permite 1 funcionário; o Completo, quantos precisar.',
+            'Dans la barre du bas vous voyez le code à 12 lettres de votre magasin. Vos employés se connectent avec « Je suis employé », saisissent ce code puis leur identifiant et mot de passe. Le forfait Regular permet 1 employé ; le Complet, autant que nécessaire.'),
         tip: _I('Si un empleado se va, toca "Cambiar código": el anterior deja de funcionar al instante.', 'If an employee leaves, tap "Change code": the old one stops working immediately.', 'Se um funcionário sair, toque em "Mudar código": o anterior deixa de funcionar na hora.', 'Si un employé part, touchez « Changer le code » : l\'ancien cesse de fonctionner immédiatement.') };
     MANUAL_STEPS.unshift(A);
     MANUAL_STEPS.splice(2, 0, B, C);
@@ -9692,7 +9692,7 @@ async function pfGwSend(id) {
     }
     pfPayDone({ status: 'pending' }, pfAcc);
 }
-window.addEventListener('DOMContentLoaded', () => setTimeout(() => { const g = document.querySelector('#pfPlans .pf-grid'); if (g && !gid('pfPayChips')) g.insertAdjacentHTML('afterend', '<p id="pfPayChips" style="text-align:center;color:#475569;margin-top:1rem"><b>Pago con tarjeta de crédito o débito</b> · La disponibilidad depende del procesador y el país.</p>'); }, 200));
+window.addEventListener('DOMContentLoaded', () => setTimeout(() => { const g = document.querySelector('#pfPlans .pf-grid'); if (g && !gid('pfPayChips')) g.insertAdjacentHTML('afterend', '<p id="pfPayChips" style="text-align:center;color:#475569;margin-top:1rem"><b>Aceptamos:</b> PixelPay · Clinpays · BAC Credomatic · Banco Promerica · Ficohsa · Transferencia bancaria · PayPal · Efectivo</p>'); }, 200));
 
 /* ---- v13: correo + contraseña → entra DIRECTO al sistema como administrador ----
    - Cuenta con membresía/prueba vigente: entra de una vez (sin segunda pantalla de usuario/contraseña).
@@ -9887,7 +9887,7 @@ pfProceed = async function (acc) {
     });
   };
   const _faq = window.pfFaqList;
-  if (_faq) window.pfFaqList = function () { return _faq().map(x => x[0] === 'plans' ? ['plans', '¿Qué plan me conviene?', '<b>Estándar</b> incluye lo esencial para una pulpería y permite al propietario más 1 empleado. <b>Crecimiento</b> agrega proveedores, promociones, diseños de factura y reportes PDF/Excel para hasta 5 usuarios. <b>Premium</b> incluye todas las funciones y usuarios ilimitados. Elige 1, 3, 6 o 12 meses; el plazo de 12 meses ofrece el mayor ahorro.'] : x[0] === 'pay' ? ['pay', '¿Cómo pago?', 'Elige el plan y paga con tarjeta de crédito o débito mediante el procesador habilitado. Las tarjetas disponibles dependen de la cuenta del procesador y del país.'] : x); };
+  if (_faq) window.pfFaqList = function () { return _faq().map(x => x[0] === 'plans' ? ['plans', '¿Qué plan me conviene?', '<b>Estándar</b> (desde L 100/mes) trae lo esencial: ventas, inventario, clientes, deudas y factura en rollo, para ti y 1 empleado. <b>Crecimiento</b> agrega proveedores, promociones y campañas, más diseños de factura, reportes PDF/Excel y hasta 5 usuarios. <b>Premium</b> agrega caja y cuadre, los 5 diseños de factura y usuarios ilimitados. Mientras más meses pagas, menos pagas por mes: el plan de 12 meses es el que más ahorra.'] : x); };
   setTimeout(() => { try { pfRenderPlans(); } catch (e) {} }, 100);
 
   /* ---------- 2) FUNCIONES POR PLAN dentro del sistema ---------- */
@@ -10293,239 +10293,6 @@ pfProceed = async function (acc) {
     const _pp = window.pfProceed;
     window.pfProceed = async function (acc) { fixPlans(); const r = await _pp.apply(this, arguments); fixPlans(); try { if (gid('pf_plans').style.display === 'block' && !gid('pfPlanList').querySelector('.og-card')) pfRenderPlans(); } catch (e) {} return r; };
     const _pc = window.pfChoose; window.pfChoose = function (id) { fixPlans(); return _pc.apply(this, arguments); };
-})();
-</script>
-
-<script id="onlg-final-consistent-plans">
-(function () {
-    'use strict';
-    const tiers = [
-        { id: 'estandar', prefix: 'es', name: 'Estándar', base: 100 },
-        { id: 'crecimiento', prefix: 'cr', name: 'Crecimiento', base: 200 },
-        { id: 'premium', prefix: 'pr', name: 'Premium', base: 350 }
-    ];
-    const monthsList = [1, 3, 6, 12];
-    const discounts = { 1: 0, 3: 10, 6: 15, 12: 25 };
-    const rate = Number(PLATFORM_CONFIG.lpsRate) || 26.5;
-    const canonicalPlans = tiers.flatMap(function (tier) {
-        return monthsList.map(function (months) {
-            const lps = Math.round(tier.base * months * (100 - discounts[months]) / 100);
-            return {
-                id: tier.prefix + months,
-                name: tier.name + ' · ' + months + (months === 1 ? ' mes' : ' meses'),
-                months: months,
-                price: Math.round(lps / rate * 100) / 100,
-                lps: lps,
-                tier: tier.id,
-                popular: tier.id === 'crecimiento' && months === 1,
-                best: months === 12
-            };
-        });
-    });
-
-    function catalogIsCorrect() {
-        const plans = PLATFORM_CONFIG.plans || [];
-        if (plans.length !== 12) return false;
-        const tiersOk = plans.every(function (plan) {
-            return ['estandar', 'crecimiento', 'premium'].includes(plan.tier) &&
-                monthsList.includes(Number(plan.months));
-        });
-        const annual = { es12: 900, cr12: 1800, pr12: 3150 };
-        return tiersOk && Object.keys(annual).every(function (id) {
-            const plan = plans.find(function (item) { return item.id === id; });
-            return plan && Number(plan.lps) === annual[id];
-        });
-    }
-
-    function ensureCatalog() {
-        if (catalogIsCorrect()) return;
-        PLATFORM_CONFIG.plans = canonicalPlans.map(function (plan) { return Object.assign({}, plan); });
-        PF_BASE_PLANS = PLATFORM_CONFIG.plans.map(function (plan) { return Object.assign({}, plan); });
-    }
-
-    // The same renderer builds the public pricing area and the post-login plan picker.
-    const renderPlans = window.pfRenderPlans;
-    window.pfRenderPlans = function () {
-        ensureCatalog();
-        return renderPlans.apply(this, arguments);
-    };
-    window.pfLoadPlans = async function () {
-        PLATFORM_CONFIG.plans = canonicalPlans.map(function (plan) { return Object.assign({}, plan); });
-        PF_BASE_PLANS = PLATFORM_CONFIG.plans.map(function (plan) { return Object.assign({}, plan); });
-        window.pfRenderPlans();
-    };
-
-    function correctVisiblePlans() {
-        ensureCatalog();
-        const marketing = document.querySelector('#pfPlans .pf-grid');
-        if (marketing && marketing.querySelectorAll('.og-card').length !== 3) window.pfRenderPlans();
-        const account = gid('pfPlanList');
-        if (account && gid('pf_plans').style.display === 'block' &&
-            account.querySelectorAll('.og-card').length !== 3) window.pfRenderPlans();
-    }
-
-    // After any sign-in method, keep the same three-card picker and go to plans.
-    const proceed = window.pfProceed;
-    window.pfProceed = async function (account) {
-        ensureCatalog();
-        const result = await proceed.apply(this, arguments);
-        [100, 500, 1200].forEach(function (delay) {
-            setTimeout(function () {
-                try {
-                    if (gid('pf_plans').style.display === 'block') correctVisiblePlans();
-                } catch (e) {}
-            }, delay);
-        });
-        return result;
-    };
-
-    // Replace all payment methods in the membership picker with card checkout.
-    window.pfChoose = function (id) {
-        ensureCatalog();
-        const selected = PLATFORM_CONFIG.plans.find(function (plan) { return plan.id === id; });
-        if (!selected) return pfMsg('No se encontró el plan. Actualiza la página e inténtalo de nuevo.');
-        pfPlan = selected;
-        const box = gid('pfPay');
-        if (!box) return;
-        box.style.display = 'block';
-        box.innerHTML = '<div class="pf-sum"><div><small>Plan elegido</small><b>' +
-            escapeHtml(selected.name) + '</b></div><div style="text-align:right"><small>Total a pagar</small><b>' +
-            pfAmt(selected) + '</b><br><small>≈ $' + pfFmt(selected.price) + ' USD</small></div></div>' +
-            '<h4 class="pf-h">Pago con tarjeta</h4>' +
-            '<p style="color:#475569;font-size:.88rem;margin:.4rem 0 .8rem">Tarjeta de crédito o débito. ' +
-            'Los datos de la tarjeta se ingresan en el formulario seguro del procesador.</p>' +
-            '<div id="payArea"><button class="pf-btn pf-full" type="button" onclick="pfCardCheckout()">' +
-            '<i class="far fa-credit-card"></i> Continuar con tarjeta</button></div>' +
-            '<p class="pf-lock"><i class="fas fa-lock"></i> La membresía se activa cuando el procesador confirma el pago.</p>';
-        box.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    };
-
-    window.pfCardCheckout = function () {
-        const config = PLATFORM_CONFIG;
-        if (!pfPlan) return pfMsg('Primero elige un plan.');
-        if (!config.paypalClientId) return pfMsg('El pago con tarjeta todavía no está configurado.');
-        if (!cloudOn()) return pfMsg('No se pudo conectar al sistema de pagos. Intenta de nuevo más tarde.');
-        function renderCardButtons() {
-            const area = gid('payArea');
-            if (!area) return;
-            area.innerHTML = '<div id="ppBox"></div>';
-            if (!window.paypal || !window.paypal.Buttons) return pfMsg('No se pudo cargar el pago con tarjeta.');
-            const buttons = window.paypal.Buttons({
-                fundingSource: window.paypal.FUNDING.CARD,
-                createOrder: function (data, actions) {
-                    return actions.order.create({
-                        purchase_units: [{
-                            description: 'Membresía ONLG ' + pfPlan.name,
-                            amount: { currency_code: config.currency, value: Number(pfPlan.price).toFixed(2) }
-                        }]
-                    });
-                },
-                onApprove: function (data, actions) {
-                    return actions.order.capture().then(async function () {
-                        try {
-                            const session = (await cloud().auth.getSession()).data.session;
-                            if (!session) return pfMsg('Tu sesión expiró. Inicia sesión otra vez.');
-                            const response = await fetch(FN_URL() + '/paypal-verify', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    apikey: config.supabaseAnonKey,
-                                    Authorization: 'Bearer ' + session.access_token
-                                },
-                                body: JSON.stringify({ orderID: data.orderID, planId: pfPlan.id })
-                            });
-                            const result = await response.json();
-                            if (!result.ok) return pfMsg('No se pudo confirmar el pago (' +
-                                (result.error || 'error') + '). Si te cobraron, contacta soporte con tu comprobante.');
-                            await pfPull();
-                            const owner = pfDB().accounts.find(function (item) { return item.id === session.user.id; });
-                            pfMsg('¡Pago confirmado! Entrando…', true);
-                            if (owner) pfEnter(owner, 'owner');
-                        } catch (e) {
-                            pfMsg('Error verificando el pago: ' + e.message);
-                        }
-                    });
-                },
-                onError: function () { pfMsg('No se pudo completar el pago con tarjeta. Inténtalo de nuevo.'); }
-            });
-            if (typeof buttons.isEligible === 'function' && !buttons.isEligible()) {
-                return pfMsg('El procesador no habilita pagos con tarjeta para esta cuenta o región.');
-            }
-            buttons.render('#ppBox').catch(function () {
-                pfMsg('No se pudo abrir el formulario de tarjeta.');
-            });
-        }
-        const sdk = 'https://www.paypal.com/sdk/js?client-id=' +
-            encodeURIComponent(config.paypalClientId) + '&currency=' +
-            encodeURIComponent(config.currency) + '&enable-funding=card';
-        if (window.paypal && window.paypal.Buttons) renderCardButtons();
-        else pfLoad(sdk, renderCardButtons);
-    };
-
-    // Preserve existing session data once, then keep all new changes persistent.
-    try {
-        const tenant = sessionStorage.getItem('activeTenant');
-        const keys = ['onlgPlatform', 'appData', tenant ? 'appData::' + tenant : 'appData'];
-        keys.forEach(function (key) {
-            const legacy = sessionStorage.getItem(key);
-            if (legacy && !localStorage.getItem(key)) localStorage.setItem(key, legacy);
-        });
-    } catch (e) {}
-    dataStore = function () { return localStorage; };
-
-    window.pfOwnerExit = async function () {
-        try { if (cloud()) await cloud().auth.signOut({ scope: 'local' }); } catch (e) {}
-        pfOwner.ok = false;
-        Object.keys(sessionStorage).filter(function (key) { return key.startsWith('sb-'); })
-            .forEach(function (key) { sessionStorage.removeItem(key); });
-        pfView('land');
-    };
-    window.pfSignOut = async function () {
-        try {
-            if (currentUser && sessionStorage.getItem('activeTenant')) {
-                localStorage.setItem(appStorageKey(), JSON.stringify(appData));
-            }
-        } catch (e) {}
-        try { if (cloud()) await cloud().auth.signOut({ scope: 'local' }); } catch (e) {}
-        pfOwner.ok = false;
-        ['empCode', 'activeTenant', 'tenantMode', 'currentUser', 'pfOAuth'].forEach(function (key) {
-            sessionStorage.removeItem(key);
-        });
-        Object.keys(sessionStorage).filter(function (key) { return key.startsWith('sb-'); })
-            .forEach(function (key) { sessionStorage.removeItem(key); });
-        location.reload();
-    };
-    const logout = window.logout;
-    window.logout = function () {
-        try {
-            if (currentUser && typeof appStorageKey === 'function') {
-                localStorage.setItem(appStorageKey(), JSON.stringify(appData));
-            }
-        } catch (e) {}
-        return logout.apply(this, arguments);
-    };
-
-    function labelSignOut() {
-        document.querySelectorAll('button[onclick*="pfOwnerExit"],button[onclick*="pfSignOut()"],button[onclick*="logout()"]').forEach(function (button) {
-            const icon = button.querySelector('i');
-            const usesOwnerExit = (button.getAttribute('onclick') || '').includes('pfOwnerExit');
-            button.textContent = '';
-            if (icon) button.appendChild(icon);
-            button.appendChild(document.createTextNode(' ' + (usesOwnerExit ? 'Finalizar sesión' : 'Finalizar sesión')));
-        });
-    }
-
-    // Keep the marketing page and member page visually synchronized on load.
-    window.addEventListener('DOMContentLoaded', function () {
-        ensureCatalog();
-        correctVisiblePlans();
-        labelSignOut();
-        setTimeout(correctVisiblePlans, 150);
-        setTimeout(labelSignOut, 300);
-    });
-    ensureCatalog();
-    window.pfRenderPlans();
-    labelSignOut();
 })();
 </script>
 
