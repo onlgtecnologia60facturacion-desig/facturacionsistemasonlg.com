@@ -7724,7 +7724,7 @@ function pfPassField(id,ph){ return '<div class="pf-pw"><input type="password" i
   '<div class="pf-sec" id="pfReviews"></div>'+
   '<div class="pf-sec" id="pfFaq"></div>'+
   '<div class="pf-sec"><h2 style="text-align:center">Sobre ONLG Technology</h2><p style="text-align:center;max-width:700px;margin:auto;color:#475569">Somos una empresa de <b>tecnología, diseño e innovación</b>. Creamos software y sistemas a la medida para negocios de cualquier tamaño, desde Honduras para el mundo.</p></div>'+
-  '<div class="pf-sec" id="pfPlans"><h2 style="text-align:center">Precios claros para tu pulpería</h2><p style="text-align:center;color:#475569">Desde <b>L 100 al mes</b>. Pruebas gratis, sin contratos y cancelas cuando quieras. Pagas por transferencia bancaria o PayPal.</p><div class="pf-grid">'+plans+'</div></div>'+
+  '<div class="pf-sec" id="pfPlans"><h2 style="text-align:center">Precios claros para tu pulpería</h2><p style="text-align:center;color:#475569">Desde <b>L 100 al mes</b>. Pruebas gratis, sin contratos y cancelas cuando quieras. Paga con tarjeta de crédito o débito.</p><div class="pf-grid">'+plans+'</div></div>'+
   '<div class="pf-foot">© 2026 EMPRESA DE TECNOLOGIA ONLG · <a href="#" onclick="pfOwner();return false;">Acceso propietario</a></div></div>'+
   '<div id="pf_auth" style="display:none"><div class="pf-box"><div style="position:absolute;left:-9999px;top:-9999px" aria-hidden="true"><label>No llenar</label><input id="pf_hp" tabindex="-1" autocomplete="off"></div><div id="pfCaptcha" style="min-height:0;margin-bottom:.5rem"></div><div class="pf-tabs"><button id="pfB_in" class="pf-tab on" onclick="pfTab(\'in\')">Entrar</button><button id="pfB_up" class="pf-tab" onclick="pfTab(\'up\')">Crear cuenta</button><button id="pfB_cash" class="pf-tab" onclick="pfTab(\'cash\')">Soy empleado</button></div>'+
   '<div id="pfT_in"><label>Correo</label><input type="email" id="inMail">'+'<label>Contraseña</label>'+pfPassField('inPass','Contraseña')+'<button class="pf-btn" style="width:100%" onclick="pfLogin()">Entrar</button><button class="pf-btn alt" style="width:100%;margin-top:.6rem" onclick="pfGoogle()"><i class="fab fa-google"></i> Continuar con Google</button></div>'+
@@ -8960,7 +8960,7 @@ function pfFaqList() {
         ['start', '¿Cómo empiezo?', 'Pulsa <b>Crear cuenta</b>, confirma tu correo y entra. Luego elige <b>Empezar mi prueba gratis</b>. Después creas tus productos y tus usuarios empleados.'],
         ['trial', '¿Cómo funciona la prueba gratis de ' + td + ' días?', 'Necesitas tu cuenta. Usas todo el sistema ' + td + ' días sin pagar y sin tarjeta. Al terminar, el sistema te pide elegir un plan y pagar para seguir. No hay cobros automáticos. Solo se puede usar una vez por cuenta.'],
         ['plans', '¿Qué plan me conviene: Regular o Completo?', 'Los dos tienen todas las funciones. <b>Regular</b> es más económico y permite al dueño + 1 empleado. <b>Completo</b> permite empleados ilimitados. Entre más meses pagas, menos pagas por mes: el plan de 12 meses es el que sale más barato en el Regular.'],
-        ['pay', '¿Cómo pago?', 'Con <b>PayPal</b> (tarjeta o saldo) o con <b>depósito/transferencia bancaria</b> subiendo tu comprobante. Los precios están en dólares y te mostramos el aproximado en lempiras; el valor final lo calcula tu banco o PayPal el día del pago.'],
+        ['pay', '¿Cómo pago?', 'Con tarjeta de crédito o débito mediante el procesador de pago disponible. Los precios están en dólares y te mostramos el aproximado en lempiras; el valor final lo calcula tu banco o PayPal el día del pago.'],
         ['cancel', '¿Cómo cancelo?', 'Cuando quieras: entra al sistema y pulsa <b>Cancelar membresía</b> (barra inferior). Si estás en prueba, termina en ese momento. Si ya pagaste, sigues con acceso hasta el final del periodo pagado. Tus datos se conservan.'],
         ['invite', 'Invita y gana ' + pct + '%', 'Entra al sistema y pulsa <b>Invitar y ganar</b> para obtener tu enlace. Cuando tu invitado haga su primera compra, recibes <b>' + pct + '% de descuento en tu próxima compra</b>. El descuento se aplica solo en los precios.'],
         ['staff', '¿Cómo entran mis empleados?', 'En <b>Ajustes</b> creas un usuario por empleado. Ellos entran desde <b>Soy empleado</b> con el <b>código de 12 letras</b> de tu pulpería y su usuario y contraseña. Si el código se filtra, lo cambias con un clic.'],
@@ -9661,16 +9661,23 @@ function pfGwUrl(g) {
     return /^https:\/\//i.test(u) ? u : '';
 }
 pfChoose = function (id) {
-    pfPlan = PLATFORM_CONFIG.plans.find(p => p.id === id); const box = gid('pfPay'); box.style.display = 'block';
-    const m = (fn, ic, t0, sm) => '<button class="pf-m" onclick="pfSel(this);' + fn + '"><i class="' + ic + '"></i><span>' + t0 + '</span><small>' + sm + '</small></button>';
-    box.innerHTML = '<div class="pf-sum"><div><small>Plan elegido</small><b>' + pfPlan.name + '</b></div><div style="text-align:right"><small>Total a pagar</small><b>' + pfAmt(pfPlan) + '</b><br><small>≈ $' + pfFmt(pfPlan.price) + ' USD</small></div></div><h4 class="pf-h">Elige tu método de pago</h4>' +
-        '<div class="pf-methods" style="grid-template-columns:repeat(2,1fr)">' +
-        PLATFORM_CONFIG.gateways.map(g => m("pfGateway('" + g.id + "')", 'fas ' + g.icon, g.name, g.sub)).join('') +
-        m('pfBankForm()', 'fas fa-building-columns', 'Cuenta de banco', 'Depósito o transferencia') + m('pfCashInfo()', 'fas fa-money-bill-wave', 'Efectivo', 'Te visitamos') +
-        m('pfPaypal()', 'fab fa-paypal', 'PayPal', 'Tarjeta o saldo') + (PLATFORM_CONFIG.googlePay.merchantId ? m('pfGPay()', 'fab fa-google-pay', 'Google Pay', 'Pago rápido') : '') +
-        '</div><div id="payArea"></div><p class="pf-lock"><i class="fas fa-lock"></i> Tu membresía se activa al confirmar el pago.</p>';
+    pfPlan = PLATFORM_CONFIG.plans.find(p => p.id === id);
+    if (!pfPlan) return pfMsg('No se encontró el plan seleccionado.');
+    const box = gid('pfPay');
+    box.style.display = 'block';
+    box.innerHTML =
+        '<div class="pf-sum"><div><small>Plan elegido</small><b>' + pfPlan.name +
+        '</b></div><div style="text-align:right"><small>Total a pagar</small><b>' +
+        pfAmt(pfPlan) + '</b><br><small>≈ $' + pfFmt(pfPlan.price) +
+        ' USD</small></div></div>' +
+        '<h4 class="pf-h">Pago seguro con tarjeta</h4>' +
+        '<div class="pf-info" style="display:block">Paga con tu tarjeta de crédito o débito. El pago se procesa de forma segura.</div>' +
+        '<button class="pf-btn pf-full" style="margin:.7rem 0" onclick="pfPaypal()"><i class="fas fa-credit-card"></i> Pagar con tarjeta</button>' +
+        '<div id="payArea"></div>' +
+        '<p class="pf-lock"><i class="fas fa-lock"></i> Tu membresía se activa al confirmar el pago.</p>';
     box.scrollIntoView({ behavior: 'smooth' });
 };
+
 function pfGateway(id) {
     const g = PLATFORM_CONFIG.gateways.find(x => x.id === id), u = pfGwUrl(g);
     gid('payArea').innerHTML = '<div class="pf-info" style="display:block"><b>' + escapeHtml(g.name) + '</b> · ' + g.sub + '<br>Monto a pagar: <b>' + pfAmt(pfPlan) + '</b></div>' + (u ?
@@ -9692,7 +9699,7 @@ async function pfGwSend(id) {
     }
     pfPayDone({ status: 'pending' }, pfAcc);
 }
-window.addEventListener('DOMContentLoaded', () => setTimeout(() => { const g = document.querySelector('#pfPlans .pf-grid'); if (g && !gid('pfPayChips')) g.insertAdjacentHTML('afterend', '<p id="pfPayChips" style="text-align:center;color:#475569;margin-top:1rem"><b>Aceptamos:</b> PixelPay · Clinpays · BAC Credomatic · Banco Promerica · Ficohsa · Transferencia bancaria · PayPal · Efectivo</p>'); }, 200));
+window.addEventListener('DOMContentLoaded', () => setTimeout(() => { const g = document.querySelector('#pfPlans .pf-grid'); if (g && !gid('pfPayChips')) g.insertAdjacentHTML('afterend', '<p id="pfPayChips" style="text-align:center;color:#475569;margin-top:1rem"><i class="fas fa-credit-card"></i> Pago con tarjeta de crédito o débito</p>'); }, 200));
 
 /* ---- v13: correo + contraseña → entra DIRECTO al sistema como administrador ----
    - Cuenta con membresía/prueba vigente: entra de una vez (sin segunda pantalla de usuario/contraseña).
@@ -10183,12 +10190,7 @@ pfProceed = async function (acc) {
 
     /* ---------- Apple ---------- */
     window.pfNeedTerms = function () { const c = gid('upAcceptTerms'); if (c && !c.checked) { pfMsg('Debes aceptar los Términos y la Política de privacidad.'); return false; } return true; };
-    window.pfApple = async function () {
-        if (!cloudOn()) return pfMsg('Apple necesita la base de datos conectada.');
-        if (!pfBotOk()) return; await sbReady(); sessionStorage.setItem('pfOAuth', '1');
-        const r = await cloud().auth.signInWithOAuth({ provider: 'apple', options: { redirectTo: location.origin + location.pathname } });
-        if (r.error) { sessionStorage.removeItem('pfOAuth'); pfMsg(errMsg(r.error)); }
-    };
+    window.pfApple = function () { return pfMsg('El inicio de sesión con Apple no está disponible.'); };
 
     /* ---------- Teléfono + SMS ---------- */
     function phStep(n) { gid('phS1').style.display = n === 1 ? 'block' : 'none'; gid('phS2').style.display = n === 2 ? 'block' : 'none'; if (n === 2) setTimeout(() => { const i = gid('phCode'); if (i) i.focus(); }, 50); }
@@ -10242,10 +10244,9 @@ pfProceed = async function (acc) {
             cash.parentNode.insertBefore(d, cash.nextSibling);
         }
         [['pfT_in', false], ['pfT_up', true]].forEach(a => {
-            const el = gid(a[0]); if (!el || el.querySelector('.stAlt')) return;
+            const el = gid(a[0]); if (!el || el.querySelector('.phoneAlt')) return;
             const g = Array.from(el.querySelectorAll('button')).filter(b => /google/i.test(b.textContent)).pop();
-            const html = '<button type="button" class="pf-btn alt stAlt" style="width:100%;margin-top:.6rem" onclick="' + (a[1] ? 'pfNeedTerms()&&' : '') + 'pfApple()"><i class="fab fa-apple"></i> ' + (a[1] ? 'Registrarme' : 'Continuar') + ' con Apple</button>' +
-                '<button type="button" class="pf-btn alt stAlt" style="width:100%;margin-top:.6rem" onclick="pfPhoneView()"><i class="fas fa-mobile-screen"></i> ' + (a[1] ? 'Registrarme' : 'Continuar') + ' con teléfono (SMS)</button>';
+            const html = '<button type="button" class="pf-btn alt phoneAlt" style="width:100%;margin-top:.6rem" onclick="pfPhoneView()"><i class="fas fa-mobile-screen"></i> ' + (a[1] ? 'Registrarme' : 'Continuar') + ' con teléfono (SMS)</button>';
             if (g) g.insertAdjacentHTML('afterend', html); else el.insertAdjacentHTML('beforeend', html);
         });
     }
