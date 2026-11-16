@@ -8260,7 +8260,7 @@ function pfTabSet(db) {
         '<label class="pf-l">Cancelar automáticamente cuando pasen estos días sin pagar</label><select id="sGrace">' + [[0, 'Al vencer el mes (0 días)'], [1, '1 día'], [3, '3 días'], [7, '7 días'], [15, '15 días'], [30, '30 días (1 mes)'], [60, '60 días (2 meses)'], [90, '90 días (3 meses)']].map(x => '<option value="' + x[0] + '"' + (x[0] === s.graceDays ? ' selected' : '') + '>' + x[1] + '</option>').join('') + '</select>' +
         '<label class="pf-l">Nombre de la empresa en los recibos</label><input id="sComp" value="' + escapeHtml(s.company) + '">' +
         '<label class="pf-l">Cuentas bancarias donde recibes pagos</label>' + rows.join('') + '<button class="pf-btn pf-full" style="margin-top:.6rem" onclick="pfSetSave()">Guardar ajustes</button></div>' +
-        '<div class="pf-box" style="max-width:600px;margin:1rem 0"><h3><i class="fas fa-key"></i> Cambiar contraseña</h3><label class="pf-l">Contraseña actual</label>' + pfPassField('cpOld', 'Actual') + '<label class="pf-l">Nueva contraseña muy segura</label>' + pfPwField('cpNew', 'Nueva', true) + '<label class="pf-l">Confirmar</label>' + pfPassField('cpNew2', 'Repite') + '<button class="pf-btn pf-full" onclick="pfPwChange()">Cambiar contraseña</button></div>';
+        '<div class="pf-box" style="max-width:600px;margin:1rem 0"><h3><i class="fas fa-key"></i> Cambiar contraseña del administrador</h3><label class="pf-l">Contraseña actual</label>' + pfPassField('cpOld', 'Actual') + '<label class="pf-l">Nueva contraseña muy segura</label>' + pfPwField('cpNew', 'Nueva', true) + '<label class="pf-l">Confirmar</label>' + pfPassField('cpNew2', 'Repite') + '<button class="pf-btn pf-full" onclick="pfPwChange()">Cambiar contraseña</button></div>';
 }
 function pfSetSave() {
     const db = pfDB(), B = []; for (let i = 0; i < 4; i++) { const b = gid('bk' + i + 'b').value.trim(), a = gid('bk' + i + 'a').value.trim(); if (b && a) B.push({ bank: b, holder: gid('bk' + i + 'h').value.trim(), account: a, type: gid('bk' + i + 't').value.trim() || 'Ahorro' }); }
@@ -8502,9 +8502,16 @@ function pfOwnerExit() { pfOwner.ok = false; if (cloudOn()) Object.keys(localSto
 function pfSyncNow() { pfPull().then(() => { pfOwnerPanel(); pfMsg('Sincronizado ✔', true); }).catch(e => pfMsg('Error: ' + e.message)); }
 const _pfPwChange0 = pfPwChange;
 pfPwChange = async function () {
-    if (!cloudOn()) return _pfPwChange0(); const n1 = gid('cpNew').value, n2 = gid('cpNew2').value, o = pfDB().accounts[0] || {};
+    if (!cloudOn()) return _pfPwChange0();
+    const oldp = gid('cpOld').value, n1 = gid('cpNew').value, n2 = gid('cpNew2').value;
+    if (!oldp) return pfMsg('Escribe tu contraseña actual.');
     const e = pfPwErrors(n1, {}); if (e.length) return pfMsg('Contraseña débil. Falta: ' + e.join(', ') + '.'); if (n1 !== n2) return pfMsg('Las contraseñas no coinciden.');
-    const r = await cloud().auth.updateUser({ password: n1 }); if (r.error) return pfMsg(pfSbErr(r.error)); pfMsg('Contraseña cambiada ✔', true);
+    const current = await cloud().auth.getUser();
+    if (current.error || !current.data.user || !current.data.user.email) return pfMsg('No se pudo verificar la sesión del administrador.');
+    const verified = await cloud().auth.signInWithPassword({ email: current.data.user.email, password: oldp });
+    if (verified.error) return pfMsg('La contraseña actual es incorrecta.');
+    const r = await cloud().auth.updateUser({ password: n1 }); if (r.error) return pfMsg(pfSbErr(r.error));
+    gid('cpOld').value = ''; gid('cpNew').value = ''; gid('cpNew2').value = ''; pfMsg('Contraseña del administrador cambiada ✔', true);
 };
 
 // ==================== v6: BASE DE DATOS EN LA NUBE, SEGURIDAD, AVISOS Y RESEÑAS ====================
@@ -9970,10 +9977,12 @@ pfProceed = async function (acc) {
         box.innerHTML = (ST.err ? '<p style="color:#b91c1c;font-weight:700">' + esc(ST.err) + '</p>' : '') +
             '<div class="pf-box" style="max-width:560px;margin:1rem 0"><h3><i class="fas fa-user-plus"></i> Agregar usuario del personal</h3>' +
             '<p style="font-size:.82rem;color:#64748b;margin:0 0 .6rem">Cobradores y personal de mantenimiento pueden registrar pagos en efectivo y entregar o enviar el recibo al cliente. Tú (propietario) ves todo lo que hacen.</p>' +
-            '<label class="pf-l">Nombre completo</label><input id="stName" autocomplete="off"><label class="pf-l">Correo (con él creará su acceso)</label><input type="email" id="stMail" autocomplete="off">' +
+            '<p style="font-size:.82rem;color:#64748b;margin:0 0 .6rem">El acceso lo crea únicamente el administrador. El empleado no podrá registrarse por su cuenta.</p>' +
+            '<label class="pf-l">Nombre completo</label><input id="stName" autocomplete="off"><label class="pf-l">Nombre de usuario</label><input id="stUsername" autocomplete="off" placeholder="Ej: carlos.cobrador">' +
+            '<label class="pf-l">Correo de acceso</label><input type="email" id="stMail" autocomplete="off"><label class="pf-l">Contraseña inicial</label>' + pfPassField('stPassword','Contraseña segura (mín. 12 caracteres)') +
             '<label class="pf-l">Teléfono</label><input type="tel" id="stPhone" autocomplete="off" placeholder="Ej: 9999-9999"><label class="pf-l">Rol</label>' +
             '<select id="stRole"><option value="cobrador">Cobrador</option><option value="mantenimiento">Mantenimiento</option></select>' +
-            '<button class="pf-btn pf-full" style="margin-top:.6rem" onclick="stAdd()"><i class="fas fa-plus"></i> Agregar</button></div>' +
+            '<button class="pf-btn pf-full" style="margin-top:.6rem" onclick="stAdd()"><i class="fas fa-user-plus"></i> Crear usuario y acceso</button></div>' +
             '<h3>Personal (' + ST.rows.length + ')</h3>' + (ST.rows.length ? pfWrap('<table class="pf-t"><tr><th>Nombre</th><th>Contacto</th><th>Rol</th><th>Estado</th><th>Cobros · Total</th><th></th></tr>' + rows + '</table>') : '<p style="color:#64748b">Aún no has agregado personal.</p>') +
             '<h3>Últimos cobros del personal</h3>' + (L.length ? pfWrap('<table class="pf-t"><tr><th>Fecha</th><th>Cobró</th><th>Pulpería</th><th>Detalle</th><th></th></tr>' + L.map(p => { const a = db.accounts.find(x => x.id === p.accId) || {}; return '<tr><td>' + new Date(p.at).toLocaleDateString('es-HN') + '</td><td>' + esc(p.collectedBy || names[p.staff_id] || '') + '<br><small>' + esc(ROLES[p.collectedRole] || '') + '</small></td><td>' + esc(a.business || '') + '</td><td>' + p.months + ' m · $' + pfFmt(p.price) + '<br><small>' + esc(p.receiptNo || '') + '</small></td><td><button class="pf-btn" onclick="pfPrintPay(\'' + p.id + '\')">Recibo</button></td></tr>'; }).join('') + '</table>') : '<p style="color:#64748b">Todavía no hay cobros del personal.</p>');
     }
@@ -9983,12 +9992,22 @@ pfProceed = async function (acc) {
         return '<div id="stOwnerBox"><p style="color:#64748b">Cargando…</p></div>';
     };
     window.stAdd = async function () {
-        const name = gid('stName').value.trim(), mail = gid('stMail').value.trim().toLowerCase(), ph = gid('stPhone').value.trim(), role = gid('stRole').value;
-        if (name.length < 3) return pfMsg('Escribe el nombre completo.'); if (!/^\S+@\S+\.\S+$/.test(mail)) return pfMsg('Escribe un correo válido.'); if (!pfPhoneOk(ph)) return pfMsg('Escribe un teléfono válido.');
+        const name = gid('stName').value.trim(), username = gid('stUsername').value.trim().toLowerCase();
+        const mail = gid('stMail').value.trim().toLowerCase(), ph = gid('stPhone').value.trim();
+        const password = gid('stPassword').value, role = gid('stRole').value;
+        if (name.length < 3) return pfMsg('Escribe el nombre completo.');
+        if (!/^[a-z0-9._-]{3,30}$/.test(username)) return pfMsg('El usuario debe tener 3–30 caracteres: letras, números, punto, guion o guion bajo.');
+        if (!/^\S+@\S+\.\S+$/.test(mail)) return pfMsg('Escribe un correo válido.');
+        if (!pfPhoneOk(ph)) return pfMsg('Escribe un teléfono válido.');
         if (!ROLES[role]) return pfMsg('Elige el rol.');
-        await sbReady(); const r = await cloud().from('platform_staff').insert({ email: mail, name, phone: pfPhoneNorm(ph), role });
-        if (r.error) return pfMsg(r.error.code === '23505' ? 'Ese correo ya está en la lista del personal.' : sbErr(r.error));
-        await loadOwner(); renderOwner(); pfMsg(name + ' agregado ✔. Dile que entre a "Acceso personal" → "Crear mi acceso" con ' + mail + '.', true);
+        const pwErrors = pfPwErrors(password, { email: mail, phone: ph });
+        if (pwErrors.length) return pfMsg('La contraseña no es suficientemente segura. Falta: ' + pwErrors.join(', ') + '.');
+        await sbReady();
+        const r = await cloud().functions.invoke('staff-create-user', { body: { name, username, email: mail, phone: pfPhoneNorm(ph), role, password } });
+        if (r.error || (r.data && r.data.error)) return pfMsg((r.data && r.data.error) || sbErr(r.error));
+        await loadOwner(); renderOwner();
+        ['stName','stUsername','stMail','stPhone','stPassword'].forEach(id => { const el = gid(id); if (el) el.value = ''; });
+        pfMsg('Usuario creado. Entrégale su usuario, correo y contraseña inicial de forma privada.', true);
     };
     window.stToggle = async function (id) {
         const r0 = ST.rows.find(x => x.id === id); if (!r0) return;
@@ -10034,53 +10053,40 @@ pfProceed = async function (acc) {
     window.stWhats = function () { if (pfShowDoc.cur) window.open('https://wa.me/?text=' + encodeURIComponent(recText()), '_blank', 'noopener'); };
     window.stMail = function () { const c = pfShowDoc.cur; if (c) location.href = 'mailto:' + (c.a.email || '') + '?subject=' + encodeURIComponent('Recibo ' + (c.p.receiptNo || '')) + '&body=' + encodeURIComponent(recText()); };
 
-    /* ---------- PERSONAL: acceso ---------- */
-    function loginBox(tab) {
-        const on = t => t === tab ? ' on' : '';
-        const head = '<div class="pf-tabs" style="max-width:430px;margin:0 auto 1rem"><button class="pf-tab' + on('in') + '" onclick="stForm(\'in\')">Entrar</button><button class="pf-tab' + on('up') + '" onclick="stForm(\'up\')">Crear mi acceso</button></div>';
-        if (tab === 'up') return '<div class="pf-box" style="max-width:430px;margin:0 auto">' + head + '<h3><i class="fas fa-id-badge"></i> Crear mi acceso</h3><p style="font-size:.82rem;color:#64748b">Usa el correo y el teléfono que registró el propietario. Tú eliges tu contraseña.</p><label class="pf-l">Correo</label><input type="email" id="stMail2" autocomplete="off"><label class="pf-l">Teléfono</label><input type="tel" id="stPhone2" autocomplete="off" placeholder="Ej: 9999-9999"><label class="pf-l">Contraseña (mín. 12, con mayúscula, número y símbolo)</label>' + pfPassField('stPw2', 'Contraseña') + '<label class="pf-l">Confirmar contraseña</label>' + pfPassField('stPw3', 'Repite la contraseña') + '<button class="pf-btn pf-full" onclick="stRegister()">Crear acceso</button></div>';
-        return '<div class="pf-box" style="max-width:430px;margin:0 auto">' + head + '<h3><i class="fas fa-user-tag"></i> Acceso personal</h3><label class="pf-l">Correo</label><input type="email" id="stMail1" autocomplete="off"><label class="pf-l">Teléfono</label><input type="tel" id="stPhone1" autocomplete="off" placeholder="Ej: 9999-9999"><label class="pf-l">Contraseña</label>' + pfPassField('stPw1', 'Contraseña') + '<button class="pf-btn pf-full" onclick="stLogin()">Entrar</button></div>';
+    /* ---------- PERSONAL: acceso (solo cuentas creadas por el propietario) ---------- */
+    function loginBox() {
+        return '<div class="pf-box" style="max-width:430px;margin:0 auto"><h3><i class="fas fa-user-tag"></i> Iniciar sesión del personal</h3>' +
+            '<p style="font-size:.82rem;color:#64748b">Tu administrador debe crear tu usuario. No existe registro público para cobradores ni mantenimiento.</p>' +
+            '<label class="pf-l">Usuario</label><input id="stUsernameLogin" autocomplete="username">' +
+            '<label class="pf-l">Correo</label><input type="email" id="stMail1" autocomplete="email">' +
+            '<label class="pf-l">Contraseña</label>' + pfPassField('stPw1', 'Contraseña') +
+            '<button class="pf-btn pf-full" onclick="stLogin()">Entrar</button></div>';
     }
-    window.stForm = function (t) { pfMsg(''); gid('pfOwnerBody').innerHTML = loginBox(t); };
+    window.stForm = function () { pfMsg(''); gid('pfOwnerBody').innerHTML = loginBox(); };
     window.pfStaff = function () {
         pfView('owner'); const box = gid('pfOwnerBody');
         if (!cloudOn()) { box.innerHTML = '<div class="pf-box"><h3>Acceso personal</h3><p>Esta función necesita la base de datos conectada.</p></div>'; return; }
-        if (S.me) return panel(); box.innerHTML = loginBox('in');
+        if (S.me) return panel(); box.innerHTML = loginBox();
     };
-    function otpBox(mail, phone) {
-        S.otp = { mail, phone };
-        gid('pfOwnerBody').innerHTML = '<div class="pf-box" style="max-width:430px;margin:0 auto"><h3>Confirma tu correo</h3><p>Te enviamos un código a <b>' + esc(mail) + '</b>.</p><input id="stOtp" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="••••••" oninput="this.value=this.value.replace(/[^0-9]/g,String())"><button class="pf-btn pf-full" onclick="stOtpVerify()">Confirmar y entrar</button><button class="pf-btn alt pf-full" style="margin-top:.5rem" onclick="stOtpResend()">Reenviar código</button></div>';
-    }
     const guard = (k, fn) => pfGuard(k, fn, true);
-    window.stRegister = guard('staff-up', async function () {
-        await sbReady(); const sb = cloud(), mail = gid('stMail2').value.trim().toLowerCase(), ph = gid('stPhone2').value, pw = gid('stPw2').value, pw2 = gid('stPw3').value;
-        if (!/^\S+@\S+\.\S+$/.test(mail)) return pfMsg('Escribe tu correo.'); if (!pfPhoneOk(ph)) return pfMsg('Escribe tu teléfono.');
-        const e = pfPwErrors(pw, { email: mail, phone: ph }); if (e.length) return pfMsg('Contraseña débil. Falta: ' + e.join(', ') + '.'); if (pw !== pw2) return pfMsg('Las contraseñas no coinciden.');
-        const ok = await sb.rpc('staff_email_ok', { p_email: mail }); if (ok.error) return pfMsg(sbErr(ok.error));
-        if (!ok.data) return pfMsg('Ese correo no está registrado como personal. Pide al propietario que te agregue.');
-        const r = await sb.auth.signUp({ email: mail, password: pw, options: { data: { staff: true } } });
-        if (r.error) return pfMsg(pfSbErr(r.error));
-        if (r.data.user && r.data.user.identities && r.data.user.identities.length === 0) return pfMsg('Ese correo ya tiene cuenta. Usa "Entrar".');
-        if (r.data.session) return afterAuth(ph); otpBox(mail, ph);
-    });
-    window.stOtpVerify = async function () {
-        const tok = gid('stOtp').value.replace(/\D/g, ''); if (tok.length < 6) return pfMsg('Escribe el código de 6 dígitos.');
-        await sbReady(); const r = await cloud().auth.verifyOtp({ email: S.otp.mail, token: tok, type: 'signup' });
-        if (r.error || !r.data.session) return pfMsg('Código incorrecto o vencido. Pide uno nuevo.'); afterAuth(S.otp.phone);
-    };
-    window.stOtpResend = async function () { const r = await cloud().auth.resend({ type: 'signup', email: S.otp.mail }); pfMsg(r.error ? pfSbErr(r.error) : 'Código enviado. Revisa tu bandeja y el spam.', !r.error); };
+    window.stRegister = function () { return pfMsg('El acceso solo lo puede crear el administrador.'); };
     window.stLogin = guard('staff-in', async function () {
-        await sbReady(); const sb = cloud(), mail = gid('stMail1').value.trim().toLowerCase(), ph = gid('stPhone1').value;
+        await sbReady(); const sb = cloud(), mail = gid('stMail1').value.trim().toLowerCase();
+        const username = gid('stUsernameLogin').value.trim().toLowerCase();
+        if (!username || !/^\S+@\S+\.\S+$/.test(mail)) return pfMsg('Escribe tu usuario y correo.');
         const r = await sb.auth.signInWithPassword({ email: mail, password: gid('stPw1').value });
-        if (r.error) { if (/not confirmed/i.test(r.error.message)) { await sb.auth.resend({ type: 'signup', email: mail }); return otpBox(mail, ph); } return pfMsg(pfSbErr(r.error)); }
-        await afterAuth(ph);
+        if (r.error) return pfMsg(pfSbErr(r.error));
+        const authUser = r.data && r.data.user;
+        if (!authUser || String((authUser.user_metadata || {}).staff_username || '').toLowerCase() !== username) {
+            await sb.auth.signOut({ scope: 'local' }); return pfMsg('Usuario, correo o contraseña incorrectos.');
+        }
+        await afterAuth();
     });
-    async function afterAuth(phone) {
+    async function afterAuth() {
         const sb = cloud(), c = await sb.rpc('staff_claim'), d = c.data || {};
         const bad = async m => { await sb.auth.signOut({ scope: 'local' }); pfMsg(m); };
         if (c.error) return bad(sbErr(c.error));
         if (d.error) return bad({ not_staff: 'Este correo no está registrado como personal.', inactive: 'Tu acceso está desactivado. Habla con el propietario.', not_confirmed: 'Confirma tu correo primero.' }[d.error] || 'No se pudo entrar.');
-        if (pfPhoneNorm(d.phone) !== pfPhoneNorm(phone)) return bad('Correo, teléfono o contraseña incorrectos.');
         S.me = d; S.tab = 'cobrar'; gid('pfOwnerBody').innerHTML = '<p style="text-align:center">Cargando…</p>';
         try { await load(); } catch (e) { return bad(sbErr(e)); }
         panel(); try { pfNotify('login', 'Personal ' + d.name + ' (' + (ROLES[d.role] || d.role) + ')', { actor: d.name }); } catch (e) {}
