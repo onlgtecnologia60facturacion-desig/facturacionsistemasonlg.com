@@ -9672,12 +9672,20 @@ pfChoose = function (id) {
     const m = (fn, ic, t0, sm) => '<button class="pf-m" onclick="pfSel(this);' + fn + '"><i class="' + ic + '"></i><span>' + t0 + '</span><small>' + sm + '</small></button>';
     box.innerHTML = '<div class="pf-sum"><div><small>Plan elegido</small><b>' + pfPlan.name + '</b></div><div style="text-align:right"><small>Total a pagar</small><b>' + pfAmt(pfPlan) + '</b><br><small>≈ $' + pfFmt(pfPlan.price) + ' USD</small></div></div><h4 class="pf-h">Elige tu método de pago</h4>' +
         '<div class="pf-methods" style="grid-template-columns:repeat(2,1fr)">' +
-        PLATFORM_CONFIG.gateways.map(g => m("pfGateway('" + g.id + "')", 'fas ' + g.icon, g.name, g.sub)).join('') +
+        m('pfHnCards()', 'fas fa-credit-card', 'Tarjetas hondureñas', 'PixelPay, BAC, Ficohsa y más') +
         m('pfCashInfo()', 'fas fa-money-bill-wave', 'Efectivo', 'Te visitamos') +
-        m('pfPaypal()', 'fab fa-paypal', 'PayPal', 'Tarjeta o saldo') + (PLATFORM_CONFIG.googlePay.merchantId ? m('pfGPay()', 'fab fa-google-pay', 'Google Pay', 'Pago rápido') : '') +
+        m('pfPaypal()', 'fab fa-paypal', 'PayPal', 'Tarjeta o saldo') +
+        m('pfGPay()', 'fab fa-google-pay', 'Google Pay', 'Pago rápido') +
         '</div><div id="payArea"></div><p class="pf-lock"><i class="fas fa-lock"></i> Tu membresía se activa al confirmar el pago.</p>';
     box.scrollIntoView({ behavior: 'smooth' });
 };
+function pfHnCards() {
+    const m = (fn, ic, t0, sm) => '<button class="pf-m" onclick="pfSel(this);' + fn + '"><i class="' + ic + '"></i><span>' + t0 + '</span><small>' + sm + '</small></button>';
+    gid('payArea').innerHTML = '<div class="pf-info" style="display:block;margin-bottom:.6rem"><b>Tarjetas hondureñas</b><br>Elige la pasarela con la que quieres pagar. Aceptan Visa, Mastercard y débito locales.</div>' +
+        '<div class="pf-methods" style="grid-template-columns:repeat(2,1fr)">' +
+        PLATFORM_CONFIG.gateways.map(g => m("pfGateway('" + g.id + "')", 'fas ' + g.icon, g.name, g.sub)).join('') +
+        '</div>';
+}
 function pfGateway(id) {
     const g = PLATFORM_CONFIG.gateways.find(x => x.id === id), u = pfGwUrl(g);
     gid('payArea').innerHTML = '<div class="pf-info" style="display:block"><b>' + escapeHtml(g.name) + '</b> · ' + g.sub + '<br>Monto a pagar: <b>' + pfAmt(pfPlan) + '</b></div>' + (u ?
@@ -9699,7 +9707,7 @@ async function pfGwSend(id) {
     }
     pfPayDone({ status: 'pending' }, pfAcc);
 }
-window.addEventListener('DOMContentLoaded', () => setTimeout(() => { const g = document.querySelector('#pfPlans .pf-grid'); if (g && !gid('pfPayChips')) g.insertAdjacentHTML('afterend', '<p id="pfPayChips" style="text-align:center;color:#475569;margin-top:1rem"><b>Aceptamos:</b> PixelPay · Clinpays · BAC Credomatic · Banco Promerica · Ficohsa · PayPal · Efectivo</p>'); }, 200));
+window.addEventListener('DOMContentLoaded', () => setTimeout(() => { const g = document.querySelector('#pfPlans .pf-grid'); if (g && !gid('pfPayChips')) g.insertAdjacentHTML('afterend', '<p id="pfPayChips" style="text-align:center;color:#475569;margin-top:1rem"><b>Aceptamos:</b> Tarjetas hondureñas · PayPal · Google Pay · Efectivo</p>'); }, 200));
 
 /* ---- v13: correo + contraseña → entra DIRECTO al sistema como administrador ----
    - Cuenta con membresía/prueba vigente: entra de una vez (sin segunda pantalla de usuario/contraseña).
