@@ -1438,6 +1438,104 @@ body{font-family:'Manrope','Segoe UI',Tahoma,sans-serif;background:#f1f6fe}
 #platformGate .inv-demo{max-width:900px;margin:1rem auto 0;padding:1.2rem}
 </style>
 </head>
+    <script id="v14-planes-y-sesion">
+/* ===== v14: planes Estándar / Crecimiento / Premium + Finalizar sesión sin borrar datos ===== */
+(function () {
+  const RATE = PLATFORM_CONFIG.lpsRate || 26.5;
+  const TERMS = [{ m: 1, d: 0 }, { m: 3, d: 10 }, { m: 6, d: 15 }, { m: 12, d: 25 }];
+  const OK = 1, NO = 0;
+  const TIERS = [
+    { k: 'est', tier: 'estandar', name: 'Estándar', tag: 'Para empezar', base: 100, users: 'Tú + 1 empleado', cls: '',
+      intro: 'Lo esencial para vender y controlar tu pulpería:',
+      f: [[OK,'Dashboard y gráfico de ventas'],[OK,'Inventario con alertas de stock bajo'],[OK,'Nueva venta y facturación'],[OK,'Factura en rollo de impresora 80 mm'],[OK,'Historial de ventas'],[OK,'Clientes, deudas y cuentas de crédito'],[OK,'Reporte del día e impresión'],[OK,'Copia de seguridad'],[NO,'Proveedores'],[NO,'Promociones y campañas'],[NO,'Caja y cuadre']] },
+    { k: 'cre', tier: 'crecimiento', name: 'Crecimiento', tag: 'Para crecer', base: 200, users: 'Hasta 5 usuarios', cls: 'pop', badge: '⭐ El más elegido',
+      intro: 'Todo lo de Estándar, y además:',
+      f: [[OK,'Proveedores y comparación de precios'],[OK,'Promociones y campañas'],[OK,'3 diseños de factura (rollo, Moderna y Minimalista) con color'],[OK,'Reportes en PDF y Excel'],[OK,'Hasta 5 usuarios'],[NO,'Caja y cuadre']] },
+    { k: 'pre', tier: 'premium', name: 'Premium', tag: 'Todo incluido', base: 350, users: 'Usuarios ilimitados', cls: 'prem', badge: '💎 Todo incluido',
+      intro: 'Todo lo de Crecimiento, y además:',
+      f: [[OK,'Caja y cuadre por cajero con cierre automático'],[OK,'Los 5 diseños de factura con color'],[OK,'Usuarios ilimitados'],[OK,'Todas las funciones, sin restricciones']] }
+  ];
+
+  // Genera los 12 planes (3 niveles × 4 periodos). IDs: est1, est3, est6, est12, cre1 ... pre12
+  PLATFORM_CONFIG.plans = [];
+  TIERS.forEach((t, ti) => TERMS.forEach((x, xi) => {
+    const lps = Math.round(t.base * x.m * (100 - x.d)) / 100;
+    PLATFORM_CONFIG.plans.push({ id: t.k + x.m, name: t.name + ' · ' + x.m + (x.m === 1 ? ' mes' : ' meses'),
+      months: x.m, price: Math.round(lps / RATE * 100) / 100, lps, tier: t.tier, popular: t.k === 'cre', best: x.m === 12, _sort: ti * 10 + xi });
+  }));
+  PF_BASE_PLANS = PLATFORM_CONFIG.plans.map(p => Object.assign({}, p));
+
+  let PF_TERM = 12;
+  const planOf = (t, m) => PLATFORM_CONFIG.plans.find(p => p.tier === t.tier && p.months === m);
+  window.pfSetTerm = function (m) { PF_TERM = m; pfRenderPlans(); };
+
+  function card(t, inApp) {
+    const p = planOf(t, PF_TERM), lps = pfPlanLps(p), per = lps / p.months, term = TERMS.find(x => x.m === PF_TERM);
+    const saved = t.base * p.months - (p.listLps ? p.listLps : lps);
+    const act = inApp ? "pfChoose('" + p.id + "')" : "pfView('auth');pfTab('up')";
+    return '<div class="pf-pc ' + t.cls + '">' + (t.badge ? '<span class="pf-pcb">' + t.badge + '</span>' : '') +
+      '<h3>' + t.name + '</h3><div class="pf-pct">' + t.tag + '</div>' +
+      (p.listLps ? '<div class="pf-disc">🎁 Descuento aplicado: antes ' + pfL(p.listLps) + '</div>' : '') +
+      '<div class="pf-pcp"><sup>L</sup>' + pfN(per) + '<small>/mes</small></div>' +
+      '<div class="pf-pcs">Pagas ' + pfL(lps) + (p.months === 1 ? ' cada mes' : ' por ' + p.months + ' meses') + ' · ≈ $' + pfFmt(p.price) + ' USD</div>' +
+      (term.d ? '<div class="pf-pcsave">Ahorras ' + term.d + '% (' + pfL(saved) + ')</div>' : '<div class="pf-pcsave" style="visibility:hidden">·</div>') +
+      '<div class="pf-pcu">👥 ' + t.users + '</div><p class="pf-pci">' + t.intro + '</p>' +
+      '<ul>' + t.f.map(f => f[0] ? '<li class="y"><i class="fas fa-check"></i>' + f[1] + '</li>' : '<li class="n"><i class="fas fa-xmark"></i><s>' + f[1] + '</s></li>').join('') + '</ul>' +
+      '<button class="pf-btn" onclick="' + act + '">' + (inApp ? 'Elegir este plan' : 'Empezar') + '</button></div>';
+  }
+
+  pfRenderPlans = function () {
+    [[document.querySelector('#pfPlans .pf-grid'), false], [gid('pfPlanList'), true]].forEach(([el, inApp]) => {
+      if (!el) return;
+      el.style.display = 'block';
+      el.innerHTML = '<div class="pf-pills">' + TERMS.map(x => '<button type="button" class="' + (x.m === PF_TERM ? 'on' : '') + '" onclick="pfSetTerm(' + x.m + ')"><b>' + x.m + (x.m === 1 ? ' mes' : ' meses') + '</b>' +
+        (x.d ? '<small>' + (x.m === 12 ? 'Mejor ahorro ' : 'Ahorra ') + x.d + '%</small>' : '') + '</button>').join('') + '</div>' +
+        '<div class="pf-pgrid">' + TIERS.map(t => card(t, inApp)).join('') + '</div>' +
+        '<p class="pf-fnote">Todos los planes se pueden cancelar cuando quieras. Sin cobros automáticos.</p>';
+    });
+  };
+  // Que la base de datos ya no reemplace estos planes por los antiguos
+  pfLoadPlans = async function () { PF_BASE_PLANS = PLATFORM_CONFIG.plans.map(p => Object.assign({}, p)); pfRenderPlans(); };
+  pfSetTier = function () { pfRenderPlans(); };
+
+  const st = document.createElement('style');
+  st.textContent = '.pf-pills{display:flex;gap:.5rem;justify-content:center;flex-wrap:wrap;margin:1.2rem 0}.pf-pills button{border:2px solid #cbd5e1;background:#fff;border-radius:999px;padding:.5rem 1.1rem;cursor:pointer;font:inherit;color:#334155}.pf-pills button small{display:block;font-size:.68rem;color:#16a34a;font-weight:700}.pf-pills button.on{border-color:#1e40af;background:#eff6ff;color:#1e40af}' +
+    '.pf-pgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:1.2rem;max-width:960px;margin:0 auto}.pf-pc{position:relative;background:#fff;border:1.5px solid #e2e8f0;border-radius:18px;padding:1.6rem 1.2rem 1.3rem;text-align:center;display:flex;flex-direction:column;box-shadow:0 4px 16px #0f172a14}.pf-pc.pop{border-color:#f59e0b;background:linear-gradient(#fffbeb,#fff)}.pf-pc.prem{border-color:#7c3aed;background:linear-gradient(#f5f3ff,#fff)}' +
+    '.pf-pcb{position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:#f59e0b;color:#fff;font-size:.72rem;font-weight:800;padding:.25rem .7rem;border-radius:999px;white-space:nowrap}.pf-pc.prem .pf-pcb{background:#7c3aed}.pf-pc h3{margin:.2rem 0 0;color:#1e3a8a;font-size:1.3rem}.pf-pct{font-size:.8rem;color:#64748b}' +
+    '.pf-pcp{font-size:3rem;font-weight:900;line-height:1.1;margin:.4rem 0 0}.pf-pcp sup{font-size:1rem}.pf-pcp small{font-size:.85rem;color:#64748b;font-weight:600}.pf-pcs{font-size:.8rem;color:#475569}.pf-pcsave{display:inline-block;align-self:center;background:#dcfce7;color:#166534;font-size:.75rem;font-weight:800;border-radius:999px;padding:.15rem .7rem;margin:.5rem 0}' +
+    '.pf-pcu{background:#eff6ff;color:#1e3a8a;font-weight:700;font-size:.85rem;border-radius:10px;padding:.45rem;margin:.3rem 0 .6rem}.pf-pci{text-align:left;font-size:.85rem;color:#475569;margin:.2rem 0}.pf-pc ul{list-style:none;padding:0;margin:.3rem 0 1rem;text-align:left;flex:1}.pf-pc li{font-size:.85rem;padding:.22rem 0 .22rem 1.5rem;position:relative}.pf-pc li i{position:absolute;left:0;top:.35rem;font-size:.8rem}.pf-pc li.y i{color:#16a34a}.pf-pc li.n{color:#94a3b8}.pf-pc li.n i{color:#dc2626}.pf-pc .pf-btn{width:100%}';
+  document.head.appendChild(st);
+  setTimeout(pfRenderPlans, 100); setTimeout(pfRenderPlans, 1200);
+})();
+
+/* ---------- Finalizar sesión (NO borra datos) ---------- */
+async function pfHasSession() {
+  if (sessionStorage.getItem('activeTenant') || (pfOwner && pfOwner.ok)) return true;
+  try { if (cloudOn()) { await sbReady(); return !!(await cloud().auth.getSession()).data.session; } } catch (e) {}
+  return false;
+}
+async function pfSafeSignOut() {
+  if (!confirm('¿Finalizar sesión?\n\nTus datos NO se borran: quedan guardados' + (cloudOn() ? ' en la nube' : ' en este equipo') + '. Solo se cierra tu acceso.')) return;
+  try { if (cloudOn() && window._dirty) { clearTimeout(window._cp); await cloudFlush(); } } catch (e) { console.error(e); }
+  await pfSignOut();      // solo limpia la sesión; nunca llama a resetAllData
+}
+async function pfFootFix() {
+  const foot = document.querySelector('#pf_land .pf-foot'); if (!foot) return;
+  const on = await pfHasSession();
+  foot.querySelectorAll('a').forEach(a => { if (/acceso personal/i.test(a.textContent)) a.remove(); });
+  let b = document.getElementById('pfFootOut');
+  if (!b) { foot.insertAdjacentHTML('beforeend', ' · <a href="#" id="pfFootOut" onclick="pfSafeSignOut();return false"><i class="fas fa-right-from-bracket"></i> Finalizar sesión</a>'); b = document.getElementById('pfFootOut'); }
+  b.style.display = on ? '' : 'none';
+  if (b.previousSibling && b.previousSibling.nodeType === 3) b.previousSibling.nodeValue = on ? ' · ' : '';
+}
+const _pfDress14 = pfDress;
+pfDress = function () { _pfDress14(); pfFootFix(); };
+const _pfView14 = pfView;
+pfView = function () { const r = _pfView14.apply(this, arguments); pfFootFix(); return r; };
+// El botón "Cerrar sesión" de la barra superior y del chip también usan la salida segura
+document.addEventListener('click', e => { const b = e.target.closest('#pfOut'); if (b) { e.preventDefault(); e.stopImmediatePropagation(); pfSafeSignOut(); } }, true);
+[500, 1500, 3000].forEach(ms => setTimeout(pfFootFix, ms));
+</script>
 <body>
 
 <div id="backupReminderBanner" aria-live="polite">
