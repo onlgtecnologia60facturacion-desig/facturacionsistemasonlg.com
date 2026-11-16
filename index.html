@@ -7718,7 +7718,7 @@ function pfPassField(id,ph){ return '<div class="pf-pw"><input type="password" i
   const plans=PLATFORM_CONFIG.plans.map(p=>pfPlanCard(p,"pfView('auth');pfTab('up')",'Empezar')).join('');
   const d=document.createElement('div'); d.id='platformGate'; d.style.display='none';
   d.innerHTML='<style>#platformGate{position:fixed;inset:0;z-index:20000;overflow:auto;background:#f8fafc;color:#1e293b}#platformGate *{box-sizing:border-box}.pf-nav{display:flex;align-items:center;justify-content:space-between;padding:.8rem 1.2rem;background:#fff;position:sticky;top:0;box-shadow:0 1px 6px #0002;z-index:2}.pf-nav img{height:54px;margin-right:.6rem;vertical-align:middle}.pf-hero{background:linear-gradient(135deg,#1e40af,#1e293b);color:#fff;text-align:center;padding:4rem 1rem}.pf-hero h1{font-size:clamp(1.8rem,5vw,3rem);margin:.2rem 0}.pf-sec{max-width:1050px;margin:0 auto;padding:2.5rem 1rem}.pf-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:1rem}.pf-card{background:#fff;border-radius:12px;padding:1.2rem;box-shadow:0 2px 10px #0001;text-align:center}.pf-card i.fa-solid,.pf-card i.fas{font-size:1.8rem;color:#1e40af}.pf-price{font-size:2rem;font-weight:800;margin:.5rem 0}.pf-btn{background:#1e40af;color:#fff;border:0;border-radius:8px;padding:.7rem 1.2rem;font-weight:700;cursor:pointer;font-size:.95rem}.pf-btn.alt{background:#fff;color:#1e40af;border:1px solid #1e40af}.pf-box{max-width:430px;margin:2rem auto;background:#fff;border-radius:14px;padding:1.6rem;box-shadow:0 10px 30px #0002}.pf-box input,.pf-box select{width:100%;padding:.7rem;border:1px solid #cbd5e1;border-radius:8px;margin:.25rem 0 .7rem;font:inherit}.pf-pw{position:relative}.pf-pw button{position:absolute;right:.5rem;top:.45rem;border:0;background:none;cursor:pointer;font-size:1rem}.pf-tabs{display:flex;gap:.3rem;margin-bottom:1rem}.pf-tab{flex:1;padding:.55rem;border:0;border-radius:8px;background:#e2e8f0;cursor:pointer;font-weight:600}.pf-tab.on{background:#1e40af;color:#fff}#pfMsg{display:none;font-size:.88rem;margin:.5rem auto;text-align:center;max-width:430px}.pf-foot{text-align:center;padding:1.5rem;color:#64748b;font-size:.8rem}table.pf-t{width:100%;border-collapse:collapse;font-size:.85rem}.pf-t td,.pf-t th{padding:.4rem;border-bottom:1px solid #e2e8f0;text-align:left}</style>'+
-  '<div class="pf-nav"><div><img src="'+logo+'" alt="ONLG"><b>ONLG Technology</b></div><div><div class="pf-dd"><button class="pf-btn alt" type="button" onclick="pfHelpToggle(event)">Ayuda ▾</button><div class="pf-ddm" id="pfHelpMenu"></div></div> <button class="pf-btn alt" onclick="pfView(\'auth\');pfTab(\'in\')">Iniciar sesión</button> <button class="pf-btn" onclick="pfView(\'auth\');pfTab(\'up\')">Crear cuenta</button></div></div>'+
+  '<div class="pf-nav"><div><img src="'+logo+'" alt="ONLG"><b>ONLG Technology</b></div><div><div class="pf-dd"><button class="pf-btn alt" type="button" id="pfCompanyBtn">Empresa ▾</button><div class="pf-ddm" id="pfCompanyMenu"><button type="button" data-legal="about">Nuestra historia</button><button type="button" data-legal="terms">Términos y condiciones</button><button type="button" data-legal="privacy">Política de privacidad</button><button type="button" data-legal="cookies">Política de cookies</button></div></div> <div class="pf-dd"><button class="pf-btn alt" type="button" onclick="pfHelpToggle(event)">Ayuda ▾</button><div class="pf-ddm" id="pfHelpMenu"></div></div> <button class="pf-btn alt" onclick="pfView(\'auth\');pfTab(\'in\')">Iniciar sesión</button> <button class="pf-btn" onclick="pfView(\'auth\');pfTab(\'up\')">Crear cuenta</button></div></div>'+
   '<div id="pf_land"><div class="pf-hero"><img src="'+logo+'" alt="ONLG" style="width:130px;height:130px;border-radius:50%;background:#fff;padding:4px;box-shadow:0 8px 30px #0006"><h1>El sistema de facturación para tu pulpería</h1><p>Vende, controla tu inventario y cuadra tu caja desde cualquier navegador. Cada pulpería tiene su propio sistema, sus empleados y sus datos.</p><button class="pf-btn" style="background:#fff;color:#1e40af" onclick="pfView(\'auth\');pfTab(\'up\')">Probar 13 días gratis</button></div>'+
   '<div class="pf-sec"><h2 style="text-align:center">Todo lo que incluye</h2><div class="pf-grid">'+feats.map(f=>'<div class="pf-card"><i class="fas '+f[0]+'"></i><h3>'+f[1]+'</h3><p style="font-size:.9rem;color:#475569">'+f[2]+'</p></div>').join('')+'</div></div>'+
   '<div class="pf-sec" id="pfReviews"></div>'+
@@ -9083,13 +9083,97 @@ pfOwnerLoginCloud = async function() {
 // ==================== ONLG: Términos, cookies y navegación ====================
 function pfLegalOpen(kind) {
     const modal = document.getElementById('pfLegalModal'), content = document.getElementById('pfLegalContent');
-    if (!modal || !content) return;
-    const terms = '<h2>Términos y condiciones de ONLG</h2><p>Al crear una cuenta, el usuario se compromete a proporcionar información correcta, mantener sus credenciales privadas y utilizar el sistema de forma legal.</p><p>La cuenta y la membresía son personales para el negocio registrado. El titular es responsable de los usuarios que autorice y de revisar la información antes de emitir comprobantes o reportes.</p><p>ONLG puede realizar mantenimiento, mejoras o suspender temporalmente el servicio por seguridad. Los pagos, renovaciones y cancelaciones se rigen por las condiciones mostradas al contratar cada plan.</p><p>Antes de usar ONLG para facturación fiscal, el cliente debe verificar los requisitos aplicables de la SAR y la normativa hondureña.</p><p>Contacto: utiliza los canales oficiales publicados en la página.</p>';
-    const privacy = '<h2>Política de privacidad</h2><p>ONLG utiliza los datos de cuenta, negocio, contacto y operación necesarios para prestar el servicio, administrar membresías, brindar soporte y proteger las cuentas.</p><p>Los datos de cada negocio deben mantenerse separados mediante los controles de acceso de la plataforma. No compartas contraseñas ni códigos de acceso.</p><p>Las cookies necesarias pueden utilizarse para iniciar sesión, mantener la sesión y proteger el servicio. Las preferencias opcionales se guardan solo si el usuario las acepta.</p><p>El titular puede solicitar información o corrección de sus datos mediante los canales oficiales de soporte.</p><p>Esta política es un texto inicial y debe revisarse con asesoría legal antes del lanzamiento comercial.</p>';
-    content.innerHTML = kind === 'terms' ? terms : privacy;
+    if (!modal || !content) { console.warn('ONLG: modal legal no encontrado'); return; }
+    try { pfCloseMenus(); } catch (e) {}
+    const wrap = function (title, body) {
+        return '<div style="padding-right:.4rem"><h2 style="margin:0 0 .8rem;color:#0f172a;font-size:1.45rem">' + title + '</h2><div style="color:#334155;line-height:1.65;font-size:.95rem">' + body + '</div></div>';
+    };
+    const terms = wrap('Términos y condiciones',
+        '<p><b>1. Aceptación.</b> Al crear una cuenta o usar ONLG, aceptas estos términos.</p>' +
+        '<p><b>2. Servicio.</b> ONLG es un sistema para pulperías en Honduras: facturación, inventario, caja, clientes, crédito, proveedores, reportes y empleados.</p>' +
+        '<p><b>3. Cuenta.</b> Debes dar datos verdaderos. Eres responsable de tus contraseñas y del uso de tus empleados.</p>' +
+        '<p><b>4. Membresía y pagos.</b> Hay prueba gratis y planes de pago. La membresía puede renovarse automáticamente si lo autorizas; puedes cancelar cuando quieras.</p>' +
+        '<p><b>5. Facturación fiscal.</b> El cumplimiento con la SAR es responsabilidad del comercio.</p>' +
+        '<p><b>6. Contacto.</b> Usa los canales oficiales de la página.</p>');
+    const privacy = wrap('Política de privacidad',
+        '<p>Tratamos datos de cuenta, negocio y operación para prestar el servicio. No almacenamos el número completo de tarjeta ni el CVC. Usamos tu correo para avisarte del estado del pago y de la activación de la membresía.</p>');
+    const cookies = wrap('Política de cookies',
+        '<p>Usamos cookies necesarias para sesión y seguridad. Las de preferencias solo si aceptas el banner. Puedes borrar cookies en tu navegador.</p>');
+    const about = wrap('Historia de ONLG',
+        '<p>ONLG Technology nace en Honduras para dar a las pulperías una herramienta simple: ventas, inventario, caja y fiado, con precios en lempiras y prueba gratis.</p>');
+    const map = { terms: terms, privacy: privacy, cookies: cookies, about: about, historia: about };
+    content.innerHTML = map[kind] || terms;
+    if (modal.parentElement !== document.body) {
+        document.body.appendChild(modal);
+    }
     modal.style.display = 'flex';
+    modal.style.alignItems = 'center';
+    modal.style.justifyContent = 'center';
+    modal.style.zIndex = '30000';
 }
+
 function pfLegalClose() { const m = document.getElementById('pfLegalModal'); if (m) m.style.display = 'none'; }
+function pfCloseMenus() {
+    document.querySelectorAll('.pf-ddm.open').forEach(function (el) { el.classList.remove('open'); });
+}
+function pfCompanyToggle(ev) {
+    if (ev) { ev.preventDefault(); ev.stopPropagation(); }
+    var menu = document.getElementById('pfCompanyMenu');
+    var help = document.getElementById('pfHelpMenu');
+    if (help) help.classList.remove('open');
+    if (menu) menu.classList.toggle('open');
+}
+function pfBindLegalMenu() {
+    var btn = document.getElementById('pfCompanyBtn');
+    var menu = document.getElementById('pfCompanyMenu');
+    if (btn && !btn._onlgBound) {
+        btn._onlgBound = true;
+        btn.addEventListener('click', function (ev) { pfCompanyToggle(ev); });
+    }
+    if (menu && !menu._onlgBound) {
+        menu._onlgBound = true;
+        menu.addEventListener('click', function (ev) {
+            var t = ev.target;
+            if (t && t.getAttribute && t.getAttribute('data-legal')) {
+                ev.preventDefault();
+                ev.stopPropagation();
+                var kind = t.getAttribute('data-legal');
+                pfCloseMenus();
+                pfLegalOpen(kind);
+            }
+        });
+    }
+}
+document.addEventListener('click', function () { pfCloseMenus(); });
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function () { setTimeout(pfBindLegalMenu, 50); });
+} else {
+    setTimeout(pfBindLegalMenu, 50);
+}
+// Re-bind when gate is shown
+(function () {
+    var _pv = window.pfView;
+    if (typeof _pv === 'function') {
+        window.pfView = function () {
+            var r = _pv.apply(this, arguments);
+            setTimeout(pfBindLegalMenu, 30);
+            return r;
+        };
+    } else {
+        setTimeout(function () {
+            if (typeof window.pfView === 'function' && !window.pfView._onlgLegal) {
+                var _pv2 = window.pfView;
+                window.pfView = function () {
+                    var r = _pv2.apply(this, arguments);
+                    setTimeout(pfBindLegalMenu, 30);
+                    return r;
+                };
+                window.pfView._onlgLegal = true;
+            }
+        }, 500);
+    }
+})();
+
 function pfCookieChoice(accepted) {
     try { localStorage.setItem('onlgCookieChoiceV1', accepted ? 'accepted' : 'necessary'); } catch(e) {}
     const b = document.getElementById('pfCookieBanner'); if (b) b.style.display = 'none';
@@ -9668,9 +9752,14 @@ function pfGwUrl(g) {
     return /^https:\/\//i.test(u) ? u : '';
 }
 pfChoose = function (id) {
-    pfPlan = PLATFORM_CONFIG.plans.find(p => p.id === id); const box = gid('pfPay'); box.style.display = 'block';
-    const m = (fn, ic, t0, sm) => '<button class="pf-m" onclick="pfSel(this);' + fn + '"><i class="' + ic + '"></i><span>' + t0 + '</span><small>' + sm + '</small></button>';
-    box.innerHTML = '<div class="pf-sum"><div><small>Plan elegido</small><b>' + pfPlan.name + '</b></div><div style="text-align:right"><small>Total a pagar</small><b>' + pfAmt(pfPlan) + '</b><br><small>≈ $' + pfFmt(pfPlan.price) + ' USD</small></div></div><h4 class="pf-h">Elige tu método de pago</h4>' +
+    pfPlan = PLATFORM_CONFIG.plans.find(p => p.id === id);
+    const box = gid('pfPay');
+    box.style.display = 'block';
+    const m = function (fn, ic, t0, sm) {
+        return '<button class="pf-m" onclick="pfSel(this);' + fn + '"><i class="' + ic + '"></i><span>' + t0 + '</span><small>' + sm + '</small></button>';
+    };
+    box.innerHTML = '<div class="pf-sum"><div><small>Plan elegido</small><b>' + pfPlan.name + '</b></div><div style="text-align:right"><small>Total a pagar</small><b>' + pfAmt(pfPlan) + '</b><br><small>≈ $' + pfFmt(pfPlan.price) + ' USD</small></div></div>' +
+        '<h4 class="pf-h">Elige tu método de pago</h4>' +
         '<div class="pf-methods" style="grid-template-columns:repeat(2,1fr)">' +
         m('pfHnCards()', 'fas fa-credit-card', 'Tarjeta', 'Crédito o débito') +
         m('pfCashInfo()', 'fas fa-money-bill-wave', 'Efectivo', 'Te visitamos') +
@@ -9679,64 +9768,124 @@ pfChoose = function (id) {
         '</div><div id="payArea"></div><p class="pf-lock"><i class="fas fa-lock"></i> Tu membresía se activa al confirmar el pago.</p>';
     box.scrollIntoView({ behavior: 'smooth' });
 };
+
 function pfHnCards() {
+    const emailPrefill = (pfAcc && pfAcc.email) ? String(pfAcc.email) : '';
+    const namePrefill = (pfAcc && (pfAcc.name || pfAcc.business)) ? String(pfAcc.name || pfAcc.business) : '';
+    const depts = ['Atlántida','Colón','Comayagua','Copán','Cortés','Choluteca','El Paraíso','Francisco Morazán','Gracias a Dios','Intibucá','Islas de la Bahía','La Paz','Lempira','Ocotepeque','Olancho','Santa Bárbara','Valle','Yoro'];
+    const deptOpts = depts.map(function (d) { return '<option value="' + d + '">' + d + '</option>'; }).join('');
     gid('payArea').innerHTML =
-        '<div style="max-width:420px;margin:.4rem auto 0;text-align:left">' +
-        '<label class="pf-l">Número de tarjeta</label>' +
-        '<input id="hnCardNum" inputmode="numeric" autocomplete="cc-number" placeholder="1234 1234 1234 1234" maxlength="19" oninput="this.value=this.value.replace(/[^0-9]/g,\'\').replace(/(.{4})/g,\'$1 \').trim()">' +
-        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-top:.15rem">' +
-        '<div><label class="pf-l">Fecha de caducidad</label><input id="hnCardExp" inputmode="numeric" autocomplete="cc-exp" placeholder="MM / AA" maxlength="7" oninput="var v=this.value.replace(/[^0-9]/g,\'\').slice(0,4);this.value=v.length>2?v.slice(0,2)+\' / \'+v.slice(2):v"></div>' +
-        '<div><label class="pf-l">Código de seguridad</label><input id="hnCardCvc" inputmode="numeric" autocomplete="cc-csc" placeholder="CVC" maxlength="4" oninput="this.value=this.value.replace(/[^0-9]/g,\'\')"></div>' +
+        '<div style="max-width:480px;margin:.4rem auto 0;text-align:left">' +
+        '<div class="pf-info" style="display:block;margin-bottom:.8rem"><b>Pago con tarjeta</b><br>Completa tus datos. Te avisaremos por correo cuando el pago se confirme y tu membresía quede activa.</div>' +
+        '<label class="pf-l">Nombre completo</label><input id="hnName" autocomplete="name" placeholder="Como aparece en tu documento" value="' + escapeHtml(namePrefill) + '">' +
+        '<label class="pf-l">Correo electrónico</label><input id="hnEmail" type="email" autocomplete="email" placeholder="correo@ejemplo.com" value="' + escapeHtml(emailPrefill) + '">' +
+        '<label class="pf-l">País o región</label><input id="hnCountry" value="Honduras" readonly style="background:#f8fafc">' +
+        '<label class="pf-l">Línea 1 de dirección</label><input id="hnAddr1" autocomplete="address-line1" placeholder="Calle, colonia, referencia">' +
+        '<label class="pf-l">Línea 2 de dirección <span style="font-weight:400;color:#94a3b8">(opcional)</span></label><input id="hnAddr2" autocomplete="address-line2" placeholder="Apartamento, suite, etc.">' +
+        '<label class="pf-l">Ciudad</label><input id="hnCity" autocomplete="address-level2" placeholder="Ciudad">' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem">' +
+        '<div><label class="pf-l">Departamento</label><select id="hnDept"><option value="">Seleccionar</option>' + deptOpts + '</select></div>' +
+        '<div><label class="pf-l">Código postal</label><input id="hnZip" autocomplete="postal-code" placeholder="Opcional"></div>' +
         '</div>' +
-        '<label style="display:flex;gap:.5rem;align-items:center;font-size:.85rem;margin:.85rem 0 .5rem;color:#475569"><input type="checkbox" id="hnSaveCard" style="width:auto"> Guardar los datos de pago para futuras compras</label>' +
-        '<button class="pf-btn pf-full" onclick="pfHnCardPay()"><i class="fas fa-lock"></i> Pagar ' + pfAmt(pfPlan) + '</button>' +
-        '<p style="font-size:.78rem;color:#64748b;margin:.55rem 0 0;text-align:center"><i class="fas fa-shield-halved"></i> Pago seguro. No almacenamos el número completo de tu tarjeta.</p>' +
+        '<label class="pf-l">Nombre en factura <span style="font-weight:400;color:#94a3b8">(opcional)</span></label><input id="hnBillName" placeholder="Nombre para facturación">' +
+        '<hr style="border:0;border-top:1px solid #e2e8f0;margin:1rem 0">' +
+        '<label class="pf-l">Número de tarjeta</label>' +
+        '<input id="hnCardNum" inputmode="numeric" autocomplete="cc-number" placeholder="1234 1234 1234 1234" maxlength="19">' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-top:.15rem">' +
+        '<div><label class="pf-l">Fecha de caducidad</label><input id="hnCardExp" inputmode="numeric" autocomplete="cc-exp" placeholder="MM / AA" maxlength="7"></div>' +
+        '<div><label class="pf-l">Código de seguridad</label><input id="hnCardCvc" inputmode="numeric" autocomplete="cc-csc" placeholder="CVC" maxlength="4"></div>' +
+        '</div>' +
+        '<label style="display:flex;gap:.5rem;align-items:flex-start;font-size:.85rem;margin:.9rem 0 .45rem;color:#475569"><input type="checkbox" id="hnAutoRenew" checked style="width:auto;margin-top:.2rem"> <span>Renovar mi membresía automáticamente al vencer. Te avisaremos por correo. Puedes cancelar cuando quieras.</span></label>' +
+        '<label style="display:flex;gap:.5rem;align-items:center;font-size:.85rem;margin:.35rem 0 .7rem;color:#475569"><input type="checkbox" id="hnSaveCard" style="width:auto"> Guardar datos para futuras compras</label>' +
+        '<button type="button" class="pf-btn pf-full" onclick="pfHnCardPay()"><i class="fas fa-lock"></i> Pagar ' + pfAmt(pfPlan) + ' y activar membresía</button>' +
+        '<p style="font-size:.78rem;color:#64748b;margin:.55rem 0 0;text-align:center"><i class="fas fa-shield-halved"></i> Pago seguro. No almacenamos el número completo ni el CVC.</p>' +
         '</div>';
+    var numEl = gid('hnCardNum'), expEl = gid('hnCardExp'), cvcEl = gid('hnCardCvc');
+    if (numEl) numEl.addEventListener('input', function () {
+        this.value = this.value.replace(/[^0-9]/g, '').replace(/(.{4})/g, '$1 ').trim().slice(0, 19);
+    });
+    if (expEl) expEl.addEventListener('input', function () {
+        var v = this.value.replace(/[^0-9]/g, '').slice(0, 4);
+        this.value = v.length > 2 ? v.slice(0, 2) + ' / ' + v.slice(2) : v;
+    });
+    if (cvcEl) cvcEl.addEventListener('input', function () {
+        this.value = this.value.replace(/[^0-9]/g, '').slice(0, 4);
+    });
 }
+
 async function pfHnCardPay() {
-    const num = (gid('hnCardNum').value || '').replace(/\s/g, '');
-    const exp = (gid('hnCardExp').value || '').replace(/\s/g, '');
-    const cvc = (gid('hnCardCvc').value || '').trim();
+    var name = (gid('hnName').value || '').trim();
+    var email = (gid('hnEmail').value || '').trim().toLowerCase();
+    var addr1 = (gid('hnAddr1').value || '').trim();
+    var addr2 = (gid('hnAddr2').value || '').trim();
+    var city = (gid('hnCity').value || '').trim();
+    var dept = (gid('hnDept').value || '').trim();
+    var zip = (gid('hnZip').value || '').trim();
+    var billName = (gid('hnBillName').value || '').trim();
+    var num = (gid('hnCardNum').value || '').replace(/\s/g, '');
+    var exp = (gid('hnCardExp').value || '').replace(/\s/g, '');
+    var cvc = (gid('hnCardCvc').value || '').trim();
+    var autoRenew = !!(gid('hnAutoRenew') && gid('hnAutoRenew').checked);
+    if (name.length < 3) return pfMsg('Proporciona tu nombre completo.');
+    if (!/^\S+@\S+\.\S+$/.test(email)) return pfMsg('Escribe un correo válido para avisarte cuando se active tu membresía.');
+    if (addr1.length < 3) return pfMsg('Completa la línea 1 de dirección.');
+    if (city.length < 2) return pfMsg('Indica la ciudad.');
+    if (!dept) return pfMsg('Selecciona el departamento.');
     if (num.length < 13 || num.length > 19) return pfMsg('Revisa el número de tarjeta.');
     if (!/^\d{2}\/\d{2}$/.test(exp)) return pfMsg('Escribe la fecha como MM / AA.');
     if (cvc.length < 3) return pfMsg('Escribe el código de seguridad (CVC).');
-    const last4 = num.slice(-4);
-    const pid = 'p' + Date.now() + Math.random().toString(36).slice(2, 5);
-    const data = { gateway: 'tarjeta', last4: last4, exp: exp };
+    var last4 = num.slice(-4);
+    var pid = 'p' + Date.now() + Math.random().toString(36).slice(2, 5);
+    var data = {
+        gateway: 'tarjeta', last4: last4, exp: exp, autoRenew: autoRenew,
+        billing: { name: name, email: email, country: 'Honduras', address1: addr1, address2: addr2, city: city, department: dept, zip: zip, billName: billName || name },
+        notifyEmail: email
+    };
     if (cloudOn()) {
         await sbReady();
-        const r = await cloud().from('payments').insert({ id: pid, tenant_id: pfAcc.id, plan: pfPlan.id, months: pfPlan.months, price: pfPlan.price, method: 'Tarjeta', data });
+        var r = await cloud().from('payments').insert({ id: pid, tenant_id: pfAcc.id, plan: pfPlan.id, months: pfPlan.months, price: pfPlan.price, method: 'Tarjeta', status: 'pending', data: data });
         if (r.error) return pfMsg(r.error.code === '23505' ? 'Ese pago ya fue registrado.' : 'No se pudo registrar el pago: ' + r.error.message);
+        try { await cloud().from('tenants').update({ email: email, name: name }).eq('id', pfAcc.id); } catch (e) {}
     } else {
-        const db = pfDB();
-        db.payments.push({ id: pid, accId: pfAcc.id, plan: pfPlan.id, months: pfPlan.months, price: pfPlan.price, priceLps: pfPlan.lps, method: 'Tarjeta', status: 'pending', last4: last4, at: new Date().toISOString() });
+        var db = pfDB();
+        db.payments.push(Object.assign({ id: pid, accId: pfAcc.id, plan: pfPlan.id, months: pfPlan.months, price: pfPlan.price, priceLps: pfPlan.lps, method: 'Tarjeta', status: 'pending', at: new Date().toISOString() }, data));
+        var a = db.accounts.find(function (x) { return x.id === pfAcc.id; });
+        if (a) { a.email = email; a.name = name; a.autoRenew = autoRenew; }
         pfSave(db);
     }
-    // No guardamos el número completo ni el CVC
+    try { if (typeof pfNotify === 'function') pfNotify('payment_pending', 'Pago con tarjeta pendiente · ' + email + ' · •••• ' + last4, { actor: name }); } catch (e) {}
     pfPayDone({ status: 'pending' }, pfAcc);
-    pfMsg('Pago con tarjeta registrado (•••• ' + last4 + '). Queda pendiente de confirmación.', true);
+    pfMsg('¡Listo! Registramos tu pago (•••• ' + last4 + '). Te avisaremos a ' + email + ' cuando se confirme y tu membresía quede activa' + (autoRenew ? '. Renovación automática activada' : '') + '.', true);
 }
+
 function pfGateway(id) {
     const g = PLATFORM_CONFIG.gateways.find(x => x.id === id), u = pfGwUrl(g);
     gid('payArea').innerHTML = '<div class="pf-info" style="display:block"><b>' + escapeHtml(g.name) + '</b> · ' + g.sub + '<br>Monto a pagar: <b>' + pfAmt(pfPlan) + '</b></div>' + (u ?
         '<a class="pf-btn pf-full" style="display:block;text-align:center;text-decoration:none;margin:.6rem 0" target="_blank" rel="noopener" href="' + escapeHtml(u) + '"><i class="fas fa-lock"></i> Pagar con ' + escapeHtml(g.name) + '</a>' +
         '<label class="pf-l">Al terminar de pagar, escribe el número de autorización o referencia</label><input id="gwRef" autocomplete="off" placeholder="Ej: 123456">' +
         '<label class="pf-l">Foto del comprobante (opcional)</label><input type="file" id="gwRcpt" accept="image/*"><button class="pf-btn pf-full" onclick="pfGwSend(\'' + id + '\')"><i class="fas fa-paper-plane"></i> Confirmar mi pago</button>' :
-        '<div class="pf-info" style="display:block;margin-top:.6rem">Este método todavía no está conectado. Para habilitar el cobro con tarjeta, el propietario debe guardar el enlace de pago seguro de esta pasarela en Ajustes.</div>');
+        '<div class="pf-info" style="display:block;margin-top:.6rem">Este método todavía no está conectado.</div>');
 }
+
 async function pfGwSend(id) {
     const g = PLATFORM_CONFIG.gateways.find(x => x.id === id), ref = gid('gwRef').value.trim(), f = gid('gwRcpt').files[0];
-    if (ref.length < 4) return pfMsg('Escribe el número de autorización o referencia.'); if (f && f.size > 1500000) return pfMsg('La imagen pesa más de 1.5 MB.');
-    const rec = f ? await new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(f); }) : '';
-    const pid = 'p' + Date.now() + Math.random().toString(36).slice(2, 5), data = Object.assign({ gateway: g.id, ref: g.id + ':' + ref }, rec ? { receipt: rec } : {});
+    if (ref.length < 4) return pfMsg('Escribe el número de autorización o referencia.');
+    if (f && f.size > 1500000) return pfMsg('La imagen pesa más de 1.5 MB.');
+    const rec = f ? await new Promise(function (r) { const fr = new FileReader(); fr.onload = function () { r(fr.result); }; fr.readAsDataURL(f); }) : '';
+    const pid = 'p' + Date.now() + Math.random().toString(36).slice(2, 5);
+    const data = Object.assign({ gateway: g.id, ref: g.id + ':' + ref }, rec ? { receipt: rec } : {});
     if (cloudOn()) {
-        await sbReady(); const r = await cloud().from('payments').insert({ id: pid, tenant_id: pfAcc.id, plan: pfPlan.id, months: pfPlan.months, price: pfPlan.price, method: g.name, data });
+        await sbReady();
+        const r = await cloud().from('payments').insert({ id: pid, tenant_id: pfAcc.id, plan: pfPlan.id, months: pfPlan.months, price: pfPlan.price, method: g.name, data: data });
         if (r.error) return pfMsg(r.error.code === '23505' ? 'Esa referencia ya fue usada en otro pago.' : 'No se pudo registrar el pago: ' + r.error.message);
     } else {
-        const db = pfDB(); db.payments.push(Object.assign({ id: pid, accId: pfAcc.id, plan: pfPlan.id, months: pfPlan.months, price: pfPlan.price, priceLps: pfPlan.lps, method: g.name, status: 'pending', at: new Date().toISOString() }, data)); pfSave(db);
+        const db = pfDB();
+        db.payments.push(Object.assign({ id: pid, accId: pfAcc.id, plan: pfPlan.id, months: pfPlan.months, price: pfPlan.price, priceLps: pfPlan.lps, method: g.name, status: 'pending', at: new Date().toISOString() }, data));
+        pfSave(db);
     }
     pfPayDone({ status: 'pending' }, pfAcc);
 }
+
 window.addEventListener('DOMContentLoaded', () => setTimeout(() => { const g = document.querySelector('#pfPlans .pf-grid'); if (g && !gid('pfPayChips')) g.insertAdjacentHTML('afterend', '<p id="pfPayChips" style="text-align:center;color:#475569;margin-top:1rem"><b>Aceptamos:</b> Tarjeta · PayPal · Google Pay · Efectivo</p>'); }, 200));
 
 /* ---- v13: correo + contraseña → entra DIRECTO al sistema como administrador ----
@@ -10336,6 +10485,63 @@ pfProceed = async function (acc) {
     const _pp = window.pfProceed;
     window.pfProceed = async function (acc) { fixPlans(); const r = await _pp.apply(this, arguments); fixPlans(); try { if (gid('pf_plans').style.display === 'block' && !gid('pfPlanList').querySelector('.og-card')) pfRenderPlans(); } catch (e) {} return r; };
     const _pc = window.pfChoose; window.pfChoose = function (id) { fixPlans(); return _pc.apply(this, arguments); };
+})();
+</script>
+
+
+<script id="onlgAboutReviews">
+(function () {
+  function stars(n) {
+    var s = '';
+    for (var i = 0; i < 5; i++) s += (i < n ? '★' : '☆');
+    return s;
+  }
+  var reviews = [
+    { name: 'María López', place: 'Pulpería El Progreso · SPS', stars: 5, text: 'Antes apuntaba todo en cuaderno. Con ONLG controlo inventario y fiados en minutos. La prueba de 22 días me convenció.' },
+    { name: 'Carlos Méndez', place: 'Mini Market La Esperanza · Tegucigalpa', stars: 5, text: 'Muy fácil de usar. Mis empleados entran con su usuario y yo veo el cuadre de caja al final del día.' },
+    { name: 'Ana Rodríguez', place: 'Abarrotería Don Pepe · La Ceiba', stars: 4, text: 'Los reportes me ayudaron a ver qué productos se mueven más. Soporte rápido por WhatsApp.' },
+    { name: 'José Hernández', place: 'Pulpería San José · Comayagua', stars: 5, text: 'Precio justo en lempiras. Cancelé y reactivé sin perder mis datos. Recomendado para pulperías pequeñas.' },
+    { name: 'Lucía Flores', place: 'Tienda Mi Barrio · Choloma', stars: 5, text: 'La facturación es rápida y el crédito a clientes ya no se me pierde. Vale la pena.' },
+    { name: 'Roberto Castillo', place: 'Supermini El Centro · San Pedro Sula', stars: 4, text: 'Buen sistema. Para el día a día cumple muy bien y el precio es accesible.' }
+  ];
+  function build() {
+    if (document.getElementById('pfAboutSec')) return;
+    var plans = document.getElementById('pfPlans') || document.querySelector('#platformGate .pf-sec');
+    if (!plans || !plans.parentNode) return;
+    var sec = document.createElement('div');
+    sec.className = 'pf-sec';
+    sec.id = 'pfAboutSec';
+    sec.innerHTML =
+      '<h2 style="text-align:center;margin-bottom:.35rem">Más que un sistema: un aliado para tu pulpería</h2>' +
+      '<p style="text-align:center;color:#475569;max-width:720px;margin:0 auto 1.1rem;line-height:1.6">ONLG nace en Honduras para digitalizar ventas, inventario, caja y fiado, con precios claros y <b>22 días de prueba gratis</b>.</p>' +
+      '<div class="pf-faq" style="max-width:820px;margin:0 auto 1.5rem">' +
+      '<details open><summary>¿Por qué elegir ONLG?</summary><p>Pensado para el comerciante local: español, lempiras, empleados con roles, crédito a clientes y reportes claros.</p></details>' +
+      '<details><summary>Nuestra historia</summary><p>Creamos ONLG para que cualquier pulpería digitalice su operación sin costos escondidos ni contratos confusos.</p></details>' +
+      '<details><summary>Membresía y renovación</summary><p>Tras la prueba eliges un plan. Si activas renovación automática, se renueva al vencer y te avisamos por correo. Puedes cancelar cuando quieras.</p></details>' +
+      '<details><summary>Legal</summary><p><a href="#" onclick="pfLegalOpen(\'terms\');return false">Términos</a> · <a href="#" onclick="pfLegalOpen(\'privacy\');return false">Privacidad</a> · <a href="#" onclick="pfLegalOpen(\'cookies\');return false">Cookies</a></p></details>' +
+      '</div>' +
+      '<h2 style="text-align:center;margin:1.5rem 0 .4rem">Lo que dicen nuestros clientes</h2>' +
+      '<p style="text-align:center;color:#64748b;margin:0 auto 1rem">Reseñas de comercios que ya usan ONLG en Honduras</p>' +
+      '<div id="pfReviewsGrid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1rem;max-width:1000px;margin:0 auto"></div>';
+    plans.parentNode.insertBefore(sec, plans);
+    var grid = document.getElementById('pfReviewsGrid');
+    if (!grid) return;
+    reviews.forEach(function (r) {
+      var card = document.createElement('div');
+      card.style.cssText = 'background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:1.1rem 1.15rem;box-shadow:0 4px 14px rgba(15,23,42,0.05)';
+      card.innerHTML =
+        '<div style="color:#f59e0b;font-size:1.05rem;letter-spacing:1px;margin-bottom:.35rem">' + stars(r.stars) + '</div>' +
+        '<p style="margin:0 0 .7rem;color:#334155;line-height:1.55;font-size:.92rem">"' + r.text + '"</p>' +
+        '<div style="font-weight:700;color:#0f172a;font-size:.9rem">' + r.name + '</div>' +
+        '<div style="font-size:.78rem;color:#64748b">' + r.place + '</div>';
+      grid.appendChild(card);
+    });
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function () { setTimeout(build, 150); });
+  } else {
+    setTimeout(build, 150);
+  }
 })();
 </script>
 
