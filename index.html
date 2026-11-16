@@ -1440,116 +1440,6 @@ body{font-family:'Manrope','Segoe UI',Tahoma,sans-serif;background:#f1f6fe}
 </head>
 <body>
 
-<script id="v14-planes-y-sesion">
-/* ===== v14: planes Estándar / Crecimiento / Premium + Finalizar sesión sin borrar datos ===== */
-(function () {
-  const RATE = PLATFORM_CONFIG.lpsRate || 26.5;
-  const TERMS = [{ m: 1, d: 0 }, { m: 3, d: 10 }, { m: 6, d: 15 }, { m: 12, d: 25 }];
-  const OK = 1, NO = 0;
-  const TIERS = [
-    { k: 'est', tier: 'estandar', name: 'Estándar', tag: 'Para empezar', base: 100, users: 'Tú + 1 empleado', cls: '',
-      intro: 'Lo esencial para vender y controlar tu pulpería:',
-      f: [[OK,'Dashboard y gráfico de ventas'],[OK,'Inventario con alertas de stock bajo'],[OK,'Nueva venta y facturación'],[OK,'Factura en rollo de impresora 80 mm'],[OK,'Historial de ventas'],[OK,'Clientes, deudas y cuentas de crédito'],[OK,'Reporte del día e impresión'],[OK,'Copia de seguridad'],[NO,'Proveedores'],[NO,'Promociones y campañas'],[NO,'Caja y cuadre']] },
-    { k: 'cre', tier: 'crecimiento', name: 'Crecimiento', tag: 'Para crecer', base: 200, users: 'Hasta 5 usuarios', cls: 'pop', badge: '⭐ El más elegido',
-      intro: 'Todo lo de Estándar, y además:',
-      f: [[OK,'Proveedores y comparación de precios'],[OK,'Promociones y campañas'],[OK,'3 diseños de factura (rollo, Moderna y Minimalista) con color'],[OK,'Reportes en PDF y Excel'],[OK,'Hasta 5 usuarios'],[NO,'Caja y cuadre']] },
-    { k: 'pre', tier: 'premium', name: 'Premium', tag: 'Todo incluido', base: 350, users: 'Usuarios ilimitados', cls: 'prem', badge: '💎 Todo incluido',
-      intro: 'Todo lo de Crecimiento, y además:',
-      f: [[OK,'Caja y cuadre por cajero con cierre automático'],[OK,'Los 5 diseños de factura con color'],[OK,'Usuarios ilimitados'],[OK,'Todas las funciones, sin restricciones']] }
-  ];
-
-  // Genera los 12 planes (3 niveles × 4 periodos). IDs: est1, est3, est6, est12, cre1 ... pre12
-  PLATFORM_CONFIG.plans = [];
-  TIERS.forEach((t, ti) => TERMS.forEach((x, xi) => {
-    const lps = Math.round(t.base * x.m * (100 - x.d)) / 100;
-    PLATFORM_CONFIG.plans.push({ id: t.k + x.m, name: t.name + ' · ' + x.m + (x.m === 1 ? ' mes' : ' meses'),
-      months: x.m, price: Math.round(lps / RATE * 100) / 100, lps, tier: t.tier, popular: t.k === 'cre', best: x.m === 12, _sort: ti * 10 + xi });
-  }));
-  PF_BASE_PLANS = PLATFORM_CONFIG.plans.map(p => Object.assign({}, p));
-
-  let PF_TERM = 12;
-  const planOf = (t, m) => PLATFORM_CONFIG.plans.find(p => p.tier === t.tier && p.months === m);
-  window.pfSetTerm = function (m) { PF_TERM = m; pfRenderPlans(); };
-
-  function card(t, inApp) {
-    const p = planOf(t, PF_TERM), lps = pfPlanLps(p), per = lps / p.months, term = TERMS.find(x => x.m === PF_TERM);
-    const saved = t.base * p.months - (p.listLps ? p.listLps : lps);
-    const act = inApp ? "pfChoose('" + p.id + "')" : "pfView('auth');pfTab('up')";
-    return '<div class="pf-pc ' + t.cls + '">' + (t.badge ? '<span class="pf-pcb">' + t.badge + '</span>' : '') +
-      '<h3>' + t.name + '</h3><div class="pf-pct">' + t.tag + '</div>' +
-      (p.listLps ? '<div class="pf-disc">🎁 Descuento aplicado: antes ' + pfL(p.listLps) + '</div>' : '') +
-      '<div class="pf-pcp"><sup>L</sup>' + pfN(per) + '<small>/mes</small></div>' +
-      '<div class="pf-pcs">Pagas ' + pfL(lps) + (p.months === 1 ? ' cada mes' : ' por ' + p.months + ' meses') + ' · ≈ $' + pfFmt(p.price) + ' USD</div>' +
-      (term.d ? '<div class="pf-pcsave">Ahorras ' + term.d + '% (' + pfL(saved) + ')</div>' : '<div class="pf-pcsave" style="visibility:hidden">·</div>') +
-      '<div class="pf-pcu">👥 ' + t.users + '</div><p class="pf-pci">' + t.intro + '</p>' +
-      '<ul>' + t.f.map(f => f[0] ? '<li class="y"><i class="fas fa-check"></i>' + f[1] + '</li>' : '<li class="n"><i class="fas fa-xmark"></i><s>' + f[1] + '</s></li>').join('') + '</ul>' +
-      '<button class="pf-btn" onclick="' + act + '">' + (inApp ? 'Elegir este plan' : 'Empezar') + '</button></div>';
-  }
-
-  pfRenderPlans = function () {
-    [[document.querySelector('#pfPlans .pf-grid'), false], [gid('pfPlanList'), true]].forEach(([el, inApp]) => {
-      if (!el) return;
-      el.style.display = 'block';
-      el.innerHTML = '<div class="pf-pills">' + TERMS.map(x => '<button type="button" class="' + (x.m === PF_TERM ? 'on' : '') + '" onclick="pfSetTerm(' + x.m + ')"><b>' + x.m + (x.m === 1 ? ' mes' : ' meses') + '</b>' +
-        (x.d ? '<small>' + (x.m === 12 ? 'Mejor ahorro ' : 'Ahorra ') + x.d + '%</small>' : '') + '</button>').join('') + '</div>' +
-        '<div class="pf-pgrid">' + TIERS.map(t => card(t, inApp)).join('') + '</div>' +
-        '<p class="pf-fnote">Todos los planes se pueden cancelar cuando quieras. Sin cobros automáticos.</p>';
-    });
-  };
-  // Que la base de datos ya no reemplace estos planes por los antiguos
-  pfLoadPlans = async function () { PF_BASE_PLANS = PLATFORM_CONFIG.plans.map(p => Object.assign({}, p)); pfRenderPlans(); };
-  pfSetTier = function () { pfRenderPlans(); };
-
-  const st = document.createElement('style');
-  st.textContent = '.pf-pills{display:flex;gap:.5rem;justify-content:center;flex-wrap:wrap;margin:1.2rem 0}.pf-pills button{border:2px solid #cbd5e1;background:#fff;border-radius:999px;padding:.5rem 1.1rem;cursor:pointer;font:inherit;color:#334155}.pf-pills button small{display:block;font-size:.68rem;color:#16a34a;font-weight:700}.pf-pills button.on{border-color:#1e40af;background:#eff6ff;color:#1e40af}' +
-    '.pf-pgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:1.2rem;max-width:960px;margin:0 auto}.pf-pc{position:relative;background:#fff;border:1.5px solid #e2e8f0;border-radius:18px;padding:1.6rem 1.2rem 1.3rem;text-align:center;display:flex;flex-direction:column;box-shadow:0 4px 16px #0f172a14}.pf-pc.pop{border-color:#f59e0b;background:linear-gradient(#fffbeb,#fff)}.pf-pc.prem{border-color:#7c3aed;background:linear-gradient(#f5f3ff,#fff)}' +
-    '.pf-pcb{position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:#f59e0b;color:#fff;font-size:.72rem;font-weight:800;padding:.25rem .7rem;border-radius:999px;white-space:nowrap}.pf-pc.prem .pf-pcb{background:#7c3aed}.pf-pc h3{margin:.2rem 0 0;color:#1e3a8a;font-size:1.3rem}.pf-pct{font-size:.8rem;color:#64748b}' +
-    '.pf-pcp{font-size:3rem;font-weight:900;line-height:1.1;margin:.4rem 0 0}.pf-pcp sup{font-size:1rem}.pf-pcp small{font-size:.85rem;color:#64748b;font-weight:600}.pf-pcs{font-size:.8rem;color:#475569}.pf-pcsave{display:inline-block;align-self:center;background:#dcfce7;color:#166534;font-size:.75rem;font-weight:800;border-radius:999px;padding:.15rem .7rem;margin:.5rem 0}' +
-    '.pf-pcu{background:#eff6ff;color:#1e3a8a;font-weight:700;font-size:.85rem;border-radius:10px;padding:.45rem;margin:.3rem 0 .6rem}.pf-pci{text-align:left;font-size:.85rem;color:#475569;margin:.2rem 0}.pf-pc ul{list-style:none;padding:0;margin:.3rem 0 1rem;text-align:left;flex:1}.pf-pc li{font-size:.85rem;padding:.22rem 0 .22rem 1.5rem;position:relative}.pf-pc li i{position:absolute;left:0;top:.35rem;font-size:.8rem}.pf-pc li.y i{color:#16a34a}.pf-pc li.n{color:#94a3b8}.pf-pc li.n i{color:#dc2626}.pf-pc .pf-btn{width:100%}';
-  document.head.appendChild(st);
-  setTimeout(pfRenderPlans, 100); setTimeout(pfRenderPlans, 1200);
-})();
-
-/* ---------- Finalizar sesión (NO borra datos) ---------- */
-async function pfHasSession() {
-  if (sessionStorage.getItem('activeTenant') || (pfOwner && pfOwner.ok)) return true;
-  try { if (cloudOn()) { await sbReady(); return !!(await cloud().auth.getSession()).data.session; } } catch (e) {}
-  return false;
-}
-async function pfSafeSignOut() {
-  if (!confirm('¿Finalizar sesión?\n\nTus datos NO se borran: quedan guardados' + (cloudOn() ? ' en la nube' : ' en este equipo') + '. Solo se cierra tu acceso.')) return;
-  try { if (cloudOn() && window._dirty) { clearTimeout(window._cp); await cloudFlush(); } } catch (e) { console.error(e); }
-  await pfSignOut();      // solo limpia la sesión; nunca llama a resetAllData
-}
-async function pfFootFix() {
-  const foot = document.querySelector('#pf_land .pf-foot'); if (!foot) return;
-  const on = await pfHasSession();
-  foot.querySelectorAll('a').forEach(a => { if (/acceso personal/i.test(a.textContent)) a.remove(); });
-  let b = document.getElementById('pfFootOut');
-  if (!b) { foot.insertAdjacentHTML('beforeend', ' · <a href="#" id="pfFootOut" onclick="pfSafeSignOut();return false"><i class="fas fa-right-from-bracket"></i> Finalizar sesión</a>'); b = document.getElementById('pfFootOut'); }
-  b.style.display = on ? '' : 'none';
-  if (b.previousSibling && b.previousSibling.nodeType === 3) b.previousSibling.nodeValue = on ? ' · ' : '';
-}
-const _pfDress14 = pfDress;
-pfDress = function () { _pfDress14(); pfFootFix(); };
-const _pfView14 = pfView;
-pfView = function () { const r = _pfView14.apply(this, arguments); pfFootFix(); return r; };
-// El botón "Cerrar sesión" de la barra superior y del chip también usan la salida segura
-document.addEventListener('click', e => { const b = e.target.closest('#pfOut'); if (b) { e.preventDefault(); e.stopImmediatePropagation(); pfSafeSignOut(); } }, true);
-[500, 1500, 3000].forEach(ms => setTimeout(pfFootFix, ms));
-</script>
-
-
-
-
-
-
-
-
-
-
-    
-
 <div id="backupReminderBanner" aria-live="polite">
     <div class="card">
         <h3 style="margin-bottom:.45rem;"><i class="fas fa-database"></i> Recordatorio de <span class="backup-hot">copia de seguridad</span></h3>
@@ -7825,7 +7715,7 @@ function pfPassField(id,ph){ return '<div class="pf-pw"><input type="password" i
 (function buildGate(){
   const logo=(gid('platformBrandLogo')||{}).src||'';
   const feats=[['fa-cash-register','Facturación y TPV','Tickets y facturas en segundos, con descuentos, ISV y varios métodos de pago.'],['fa-boxes-stacked','Inventario','Productos, stock mínimo, alertas de stock bajo y búsqueda rápida.'],['fa-vault','Caja y cuadre','Apertura, cierre y cuadre de caja por empleado.'],['fa-users','Clientes y crédito','Cuentas de crédito, deudas y abonos por cliente.'],['fa-truck','Proveedores','Precios de proveedores y comparación de costos.'],['fa-gift','Promos y campañas','Ofertas para vender más en tu pulpería.'],['fa-chart-line','Reportes','Ventas por día, PDF, Excel e impresión.'],['fa-user-lock','Empleados con roles','Cada empleado entra con su usuario y ve solo lo suyo.'],['fa-language','Idiomas y moneda','Interfaz multi-idioma y tu moneda local.']];
-  const plans=PLATFORM_CONFIG.plans.map(p=>pfPlanCard(p,"pfView('auth');pfTab('up')",'Empezar')).join('');
+  const plans='';
   const d=document.createElement('div'); d.id='platformGate'; d.style.display='none';
   d.innerHTML='<style>#platformGate{position:fixed;inset:0;z-index:20000;overflow:auto;background:#f8fafc;color:#1e293b}#platformGate *{box-sizing:border-box}.pf-nav{display:flex;align-items:center;justify-content:space-between;padding:.8rem 1.2rem;background:#fff;position:sticky;top:0;box-shadow:0 1px 6px #0002;z-index:2}.pf-nav img{height:54px;margin-right:.6rem;vertical-align:middle}.pf-hero{background:linear-gradient(135deg,#1e40af,#1e293b);color:#fff;text-align:center;padding:4rem 1rem}.pf-hero h1{font-size:clamp(1.8rem,5vw,3rem);margin:.2rem 0}.pf-sec{max-width:1050px;margin:0 auto;padding:2.5rem 1rem}.pf-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:1rem}.pf-card{background:#fff;border-radius:12px;padding:1.2rem;box-shadow:0 2px 10px #0001;text-align:center}.pf-card i.fa-solid,.pf-card i.fas{font-size:1.8rem;color:#1e40af}.pf-price{font-size:2rem;font-weight:800;margin:.5rem 0}.pf-btn{background:#1e40af;color:#fff;border:0;border-radius:8px;padding:.7rem 1.2rem;font-weight:700;cursor:pointer;font-size:.95rem}.pf-btn.alt{background:#fff;color:#1e40af;border:1px solid #1e40af}.pf-box{max-width:430px;margin:2rem auto;background:#fff;border-radius:14px;padding:1.6rem;box-shadow:0 10px 30px #0002}.pf-box input,.pf-box select{width:100%;padding:.7rem;border:1px solid #cbd5e1;border-radius:8px;margin:.25rem 0 .7rem;font:inherit}.pf-pw{position:relative}.pf-pw button{position:absolute;right:.5rem;top:.45rem;border:0;background:none;cursor:pointer;font-size:1rem}.pf-tabs{display:flex;gap:.3rem;margin-bottom:1rem}.pf-tab{flex:1;padding:.55rem;border:0;border-radius:8px;background:#e2e8f0;cursor:pointer;font-weight:600}.pf-tab.on{background:#1e40af;color:#fff}#pfMsg{display:none;font-size:.88rem;margin:.5rem auto;text-align:center;max-width:430px}.pf-foot{text-align:center;padding:1.5rem;color:#64748b;font-size:.8rem}table.pf-t{width:100%;border-collapse:collapse;font-size:.85rem}.pf-t td,.pf-t th{padding:.4rem;border-bottom:1px solid #e2e8f0;text-align:left}</style>'+
   '<div class="pf-nav"><div><img src="'+logo+'" alt="ONLG"><b>ONLG Technology</b></div><div><div class="pf-dd"><button class="pf-btn alt" type="button" onclick="pfHelpToggle(event)">Ayuda ▾</button><div class="pf-ddm" id="pfHelpMenu"></div></div> <button class="pf-btn alt" onclick="pfView(\'auth\');pfTab(\'in\')">Iniciar sesión</button> <button class="pf-btn" onclick="pfView(\'auth\');pfTab(\'up\')">Crear cuenta</button></div></div>'+
@@ -7834,7 +7724,7 @@ function pfPassField(id,ph){ return '<div class="pf-pw"><input type="password" i
   '<div class="pf-sec" id="pfReviews"></div>'+
   '<div class="pf-sec" id="pfFaq"></div>'+
   '<div class="pf-sec"><h2 style="text-align:center">Sobre ONLG Technology</h2><p style="text-align:center;max-width:700px;margin:auto;color:#475569">Somos una empresa de <b>tecnología, diseño e innovación</b>. Creamos software y sistemas a la medida para negocios de cualquier tamaño, desde Honduras para el mundo.</p></div>'+
-  '<div class="pf-sec" id="pfPlans"><h2 style="text-align:center">Precios claros para tu pulpería</h2><p style="text-align:center;color:#475569">Desde <b>L 100 al mes</b>. Pruebas gratis, sin contratos y cancelas cuando quieras. Pagas por transferencia bancaria o PayPal.</p><div class="pf-grid">'+plans+'</div></div>'+
+  '<div class="pf-sec" id="pfPlans"><h2 style="text-align:center">Precios claros para tu pulpería</h2><p style="text-align:center;color:#475569">Estándar, Crecimiento y Premium. Elige 1, 3, 6 o 12 meses. Paga con tarjeta de crédito o débito.</p><div class="pf-grid">'+plans+'</div></div>'+
   '<div class="pf-foot">© 2026 EMPRESA DE TECNOLOGIA ONLG · <a href="#" onclick="pfOwner();return false;">Acceso propietario</a></div></div>'+
   '<div id="pf_auth" style="display:none"><div class="pf-box"><div style="position:absolute;left:-9999px;top:-9999px" aria-hidden="true"><label>No llenar</label><input id="pf_hp" tabindex="-1" autocomplete="off"></div><div id="pfCaptcha" style="min-height:0;margin-bottom:.5rem"></div><div class="pf-tabs"><button id="pfB_in" class="pf-tab on" onclick="pfTab(\'in\')">Entrar</button><button id="pfB_up" class="pf-tab" onclick="pfTab(\'up\')">Crear cuenta</button><button id="pfB_cash" class="pf-tab" onclick="pfTab(\'cash\')">Soy empleado</button></div>'+
   '<div id="pfT_in"><label>Correo</label><input type="email" id="inMail">'+'<label>Contraseña</label>'+pfPassField('inPass','Contraseña')+'<button class="pf-btn" style="width:100%" onclick="pfLogin()">Entrar</button><button class="pf-btn alt" style="width:100%;margin-top:.6rem" onclick="pfGoogle()"><i class="fab fa-google"></i> Continuar con Google</button></div>'+
@@ -8322,8 +8212,8 @@ function pfOwnerTab(t0) { pfOwner.tab = t0; pfOwnerPanel(); }
 function pfWrap(h) { return '<div style="overflow-x:auto">' + h + '</div>'; }
 function pfOwnerPanel() {
     pfSweep(); const db = pfDB(), o = db.owner, box = gid('pfOwnerBody'), tb = pfOwner.tab || 'acc', pend = db.payments.filter(p => p.status === 'pending').length;
-    const tabs = [['acc', 'Cuentas'], ['cash', 'Efectivo'], ['pay', 'Pagos' + (pend ? ' (' + pend + ')' : '')], ['set', 'Ajustes'], ['log', 'Accesos'], ['rev', 'Reseñas']];
-    const body = tb === 'log' ? pfTabLog() : tb === 'rev' ? pfTabRev() : tb === 'cash' ? pfTabCash(db) : tb === 'pay' ? pfTabPay(db) : tb === 'set' ? pfTabSet(db) : pfTabAcc(db);
+    const tabs = [['acc', 'Cuentas'], ['cash', 'Efectivo'], ['pay', 'Pagos' + (pend ? ' (' + pend + ')' : '')], ['set', 'Ajustes'], ['log', 'Accesos'], ['rev', 'Reseñas'], ['staff', 'Usuarios']];
+    const body = tb === 'staff' ? pfTabStaff() : tb === 'log' ? pfTabLog() : tb === 'rev' ? pfTabRev() : tb === 'cash' ? pfTabCash(db) : tb === 'pay' ? pfTabPay(db) : tb === 'set' ? pfTabSet(db) : pfTabAcc(db);
     box.innerHTML = '<h2>Hola, ' + escapeHtml((o && o.name) || 'propietario') + '</h2><div class="pf-tabs" style="max-width:640px">' + tabs.map(x => '<button class="pf-tab' + (x[0] === tb ? ' on' : '') + '" onclick="pfOwnerTab(\'' + x[0] + '\')">' + x[1] + '</button>').join('') + '</div>' + body + '<p><button class="pf-btn alt" onclick="pfOwnerExit()">Salir</button> ' + (cloudOn() ? '<button class="pf-btn" onclick="pfSyncNow()">↻ Sincronizar</button>' : '') + '</p>';
     if (tb === 'cash') pfCashPreview();
 }
@@ -8339,7 +8229,7 @@ function pfTabAcc(db) {
 function pfAcc2(id, add) { const db = pfDB(), a = db.accounts.find(x => x.id === id); if (add) pfExtend(a, 1); else { a.expiresAt = null; a.cancelledAt = new Date().toISOString(); } pfSave(db); pfOwnerPanel(); }
 function pfTabPay(db) {
     const L = db.payments.slice().reverse(), st = { pending: '⏳ Pendiente', approved: '✅ Aprobado', rejected: '❌ Rechazado', revoked: '↩️ Revocado' };
-    return '<h3>Pagos (' + L.length + ')</h3>' + (L.length ? pfWrap('<table class="pf-t"><tr><th>Fecha</th><th>Pulpería</th><th>Detalle</th><th>Estado</th><th></th></tr>' + L.map(p => { const a = db.accounts.find(x => x.id === p.accId) || {}; return '<tr><td>' + new Date(p.at).toLocaleDateString() + '</td><td>' + escapeHtml(a.business || '') + '</td><td>' + p.months + ' m · ' + pfAmtPay(p) + '<br><small>' + escapeHtml(p.method) + (p.bankFrom ? ' · ' + escapeHtml(p.bankFrom) + ' cta ' + escapeHtml(p.fromAccount || '') + ' ref ' + escapeHtml(p.ref || '') : '') + '</small></td><td>' + st[p.status] + (p.auto ? '<br><small>automático</small>' : '') + '</td><td>' +
+    return '<h3>Pagos (' + L.length + ')</h3>' + (L.length ? pfWrap('<table class="pf-t"><tr><th>Fecha</th><th>Pulpería</th><th>Detalle</th><th>Estado</th><th></th></tr>' + L.map(p => { const a = db.accounts.find(x => x.id === p.accId) || {}; return '<tr><td>' + new Date(p.at).toLocaleDateString() + '</td><td>' + escapeHtml(a.business || '') + '</td><td>' + p.months + ' m · ' + pfAmtPay(p) + '<br><small>' + escapeHtml(p.method) + (p.collectedBy ? ' · cobró: ' + escapeHtml(p.collectedBy) : '') + (p.bankFrom ? ' · ' + escapeHtml(p.bankFrom) + ' cta ' + escapeHtml(p.fromAccount || '') + ' ref ' + escapeHtml(p.ref || '') : '') + '</small></td><td>' + st[p.status] + (p.auto ? '<br><small>automático</small>' : '') + '</td><td>' +
         (p.receipt ? '<button class="pf-btn alt" onclick="pfSeeImg(\'' + p.id + '\')">Foto</button> ' : '') +
         (p.status === 'pending' ? '<button class="pf-btn" onclick="pfPay2(\'' + p.id + '\',1)">Aprobar</button> <button class="pf-btn alt" onclick="pfPay2(\'' + p.id + '\',0)">Rechazar</button>' : '') +
         (p.status === 'approved' ? '<button class="pf-btn" onclick="pfPrintPay(\'' + p.id + '\')">Recibo</button> <button class="pf-btn alt" onclick="pfRevoke(\'' + p.id + '\')">Revocar</button>' : '') + '</td></tr>'; }).join('') + '</table>') : '<p style="color:#64748b">Aún no hay pagos.</p>');
@@ -8781,7 +8671,7 @@ async function cloudFlush() {
             _ver = d.version; _retry = 0; cloudStatus('☁ Guardado en la nube ✓'); break;
         }
     } catch (e) {
-        console.error(e); if (String(e.message) === 'plan_limit') { cloudStatus('⚠ Tu plan Regular permite solo 2 usuarios.', true); alert('Tu plan Regular permite solo 2 usuarios (tú + 1 empleado). Elimina un usuario o cambia al plan Completo para guardar.'); return; } cloudStatus('⚠ Sin conexión con la base de datos. Reintentando…', true); _retry++; window._dirty = true; setTimeout(cloudFlush, Math.min(30000, 2000 * _retry));
+        console.error(e); if (String(e.message) === 'plan_limit') { cloudStatus('⚠ Se alcanzó el límite de usuarios de este plan.', true); alert('Se alcanzó el límite de usuarios configurado para este plan. Revisa el plan o contacta al propietario.'); return; } cloudStatus('⚠ Sin conexión con la base de datos. Reintentando…', true); _retry++; window._dirty = true; setTimeout(cloudFlush, Math.min(30000, 2000 * _retry));
     } finally { _pushing = false; if (_pendingPush) { _pendingPush = false; setTimeout(cloudFlush, 300); } }
 }
 cloudPush = function () { if (!cloudOn() || !sessionStorage.getItem('activeTenant')) return; window._dirty = true; clearTimeout(window._cp); window._cp = setTimeout(cloudFlush, 800); };
@@ -8894,7 +8784,7 @@ async function pfReviewsLoad() {
     }
     const avg = rows.length ? rows.reduce((s, x) => s + Number(x.rating || 5), 0) / rows.length : 0;
     box.innerHTML = '<h2 style="text-align:center">Lo que dicen las pulperías</h2>' +
-        '<div class="pf-trust"><span>🇭🇳 Hecho en Honduras</span><span>☁ Tus datos guardados en la nube</span><span>🏦 Paga por PayPal o transferencia</span><span>🔒 Acceso protegido</span></div>' +
+        '<div class="pf-trust"><span>🇭🇳 Hecho en Honduras</span><span>☁ Tus datos guardados en la nube</span><span>💳 Pago con tarjeta</span><span>🔒 Acceso protegido</span></div>' +
         (rows.length ? '<p class="rv-avg"><span>' + pfStars(avg) + '</span> <b>' + avg.toFixed(1) + '</b> de 5 · ' + rows.length + (rows.length === 1 ? ' reseña' : ' reseñas') + '</p><div class="pf-grid">' +
             rows.map(x => '<div class="pf-card rv"><div class="rv-st">' + pfStars(x.rating) + '</div><p>“' + escapeHtml(x.text) + '”</p><div class="rv-by"><b>' + escapeHtml(x.name) + '</b>' + (x.business ? '<br><small>' + escapeHtml(x.business) + '</small>' : '') + '</div></div>').join('') + '</div>'
             : '<p style="text-align:center;color:#475569">Aquí aparecen las opiniones de pulperías reales que usan el sistema. ¡Sé de los primeros en contar tu experiencia!</p>') +
@@ -9378,17 +9268,17 @@ window.addEventListener('DOMContentLoaded', function () { setTimeout(function ()
         tip: _I('Usa el menú de la izquierda para moverte. Si te pierdes, toca el botón ❓.', 'Use the menu on the left to move around. If you get lost, tap the ❓ button.', 'Use o menu à esquerda para navegar. Se se perder, toque no botão ❓.', 'Utilisez le menu de gauche pour naviguer. Si vous êtes perdu, touchez le bouton ❓.') };
     const B = { ico: 'fa-ticket', page: null, kw: 'membresia plan prueba gratis cancelar precio pagar invitar descuento membership trial price cancel',
         title: _I('Tu membresía y prueba gratis', 'Your membership and free trial', 'Sua assinatura e teste grátis', 'Votre abonnement et essai gratuit'),
-        body: _I('Empiezas con 13 días de prueba gratis. Después eliges un plan desde L 100 al mes (también hay planes de 3, 6 y 12 meses con ahorro). No hay cobros automáticos: puedes cancelar cuando quieras con el enlace "Cancelar membresía" de la barra inferior y tus datos se conservan.',
-            'You start with a 13-day free trial. Then you pick a plan from L 100 per month (there are also 3, 6 and 12-month plans that save money). There are no automatic charges: you can cancel any time with the "Cancel membership" link in the bottom bar and your data is kept.',
-            'Você começa com 13 dias de teste grátis. Depois escolhe um plano a partir de L 100 por mês (há também planos de 3, 6 e 12 meses com economia). Não há cobranças automáticas: você cancela quando quiser pelo link "Cancelar assinatura" na barra inferior e seus dados são mantidos.',
-            'Vous commencez par 13 jours d\'essai gratuit. Ensuite vous choisissez un forfait à partir de L 100 par mois (il existe aussi des forfaits de 3, 6 et 12 mois plus avantageux). Aucun prélèvement automatique : vous annulez quand vous voulez avec le lien « Annuler l\'abonnement » de la barre du bas et vos données sont conservées.'),
+        body: _I('Empiezas con 13 días de prueba gratis. Después eliges entre Estándar, Crecimiento y Premium, con duración de 1, 3, 6 o 12 meses. No hay cobros automáticos: puedes cancelar cuando quieras con el enlace "Cancelar membresía" de la barra inferior y tus datos se conservan.',
+            'You start with a 13-day free trial. Then choose Standard, Growth, or Premium for 1, 3, 6, or 12 months. There are no automatic charges: you can cancel any time with the "Cancel membership" link in the bottom bar and your data is kept.',
+            'Você começa com 13 dias de teste grátis. Depois escolhe entre Estándar, Crecimiento e Premium por 1, 3, 6 ou 12 meses. Não há cobranças automáticas: você cancela quando quiser pelo link "Cancelar assinatura" na barra inferior e seus dados são mantidos.',
+            'Vous commencez par 13 jours d\'essai gratuit. Choisissez ensuite Estándar, Crecimiento ou Premium pour 1, 3, 6 ou 12 mois. Aucun prélèvement automatique : vous pouvez annuler à tout moment avec le lien « Annuler l\'abonnement » de la barre du bas et vos données sont conservées.'),
         tip: _I('Con "Invitar y ganar": si alguien que invitas hace su primera compra, recibes 19,56% de descuento en tu próxima compra.', 'With "Invite and earn": if someone you invite makes their first purchase, you get 19.56% off your next purchase.', 'Com "Convidar e ganhar": se alguém que você convidar fizer a primeira compra, você ganha 19,56% de desconto na próxima.', 'Avec « Inviter et gagner » : si une personne invitée fait son premier achat, vous obtenez 19,56 % de réduction sur votre prochain achat.') };
     const C = { ico: 'fa-key', page: null, kw: 'codigo empleados empleado entrar acceso cambiar codigo staff code employee',
         title: _I('Código para tus empleados', 'Code for your employees', 'Código para seus funcionários', 'Code pour vos employés'),
-        body: _I('En la barra inferior ves el código de 12 letras de tu pulpería. Tus empleados entran con "Soy empleado", escriben ese código y después su usuario y contraseña. Con el plan Regular puedes tener 1 empleado; con el Completo, los que necesites.',
-            'In the bottom bar you can see your store\'s 12-letter code. Your employees sign in with "I\'m an employee", type that code and then their username and password. The Regular plan allows 1 employee; the Complete plan allows as many as you need.',
-            'Na barra inferior você vê o código de 12 letras da sua loja. Seus funcionários entram com "Sou funcionário", digitam esse código e depois seu usuário e senha. O plano Regular permite 1 funcionário; o Completo, quantos precisar.',
-            'Dans la barre du bas vous voyez le code à 12 lettres de votre magasin. Vos employés se connectent avec « Je suis employé », saisissent ce code puis leur identifiant et mot de passe. Le forfait Regular permet 1 employé ; le Complet, autant que nécessaire.'),
+        body: _I('En la barra inferior ves el código de tu pulpería. Tus empleados entran con "Soy empleado" y su usuario y contraseña. Estándar permite 1 empleado, Crecimiento hasta 5 usuarios y Premium usuarios ilimitados.',
+            'The bottom bar shows your store code. Staff choose "I’m an employee" and sign in with their username and password. Standard allows 1 employee, Growth up to 5 users, and Premium unlimited users.',
+            'A barra inferior mostra o código da loja. A equipe toca em "Sou funcionário" e entra com usuário e senha. Estándar permite 1 funcionário, Crecimiento até 5 usuários e Premium usuários ilimitados.',
+            'Le code de votre magasin apparaît dans la barre inférieure. Le personnel choisit « Je suis employé » et se connecte avec son identifiant et son mot de passe. Estándar permet 1 employé, Crecimiento jusqu’à 5 utilisateurs et Premium un nombre illimité.'),
         tip: _I('Si un empleado se va, toca "Cambiar código": el anterior deja de funcionar al instante.', 'If an employee leaves, tap "Change code": the old one stops working immediately.', 'Se um funcionário sair, toque em "Mudar código": o anterior deixa de funcionar na hora.', 'Si un employé part, touchez « Changer le code » : l\'ancien cesse de fonctionner immédiatement.') };
     MANUAL_STEPS.unshift(A);
     MANUAL_STEPS.splice(2, 0, B, C);
@@ -9802,7 +9692,7 @@ async function pfGwSend(id) {
     }
     pfPayDone({ status: 'pending' }, pfAcc);
 }
-window.addEventListener('DOMContentLoaded', () => setTimeout(() => { const g = document.querySelector('#pfPlans .pf-grid'); if (g && !gid('pfPayChips')) g.insertAdjacentHTML('afterend', '<p id="pfPayChips" style="text-align:center;color:#475569;margin-top:1rem"><b>Aceptamos:</b> PixelPay · Clinpays · BAC Credomatic · Banco Promerica · Ficohsa · Transferencia bancaria · PayPal · Efectivo</p>'); }, 200));
+window.addEventListener('DOMContentLoaded', () => setTimeout(() => { const g = document.querySelector('#pfPlans .pf-grid'); if (g && !gid('pfPayChips')) g.insertAdjacentHTML('afterend', '<p id="pfPayChips" style="text-align:center;color:#475569;margin-top:1rem"><b>Pago con tarjeta de crédito o débito</b> · La disponibilidad depende del procesador y el país.</p>'); }, 200));
 
 /* ---- v13: correo + contraseña → entra DIRECTO al sistema como administrador ----
    - Cuenta con membresía/prueba vigente: entra de una vez (sin segunda pantalla de usuario/contraseña).
@@ -9915,5 +9805,729 @@ pfProceed = async function (acc) {
 .sidebar-footer{flex:0 0 auto;padding:.6rem 1rem!important}
 @media (max-height:760px){.sidebar-subtitle{display:none}.sidebar-menu a{padding:.5rem 1.2rem!important}}
 </style>
+<style id="onlgPlanStyle">
+.og-per{display:flex;gap:.5rem;justify-content:center;flex-wrap:wrap;margin:1rem 0}
+.og-per button{border:2px solid #cbd5e1;background:#fff;border-radius:999px;padding:.5rem 1.1rem;font:inherit;font-weight:700;cursor:pointer;color:#334155}
+.og-per button small{display:block;font-size:.68rem;color:#16a34a;font-weight:800}
+.og-per button.on{border-color:#1e40af;background:#eff6ff;color:#1e40af}
+.og-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(255px,1fr));gap:1.2rem;max-width:1000px;margin:1.6rem auto 0;text-align:left}
+.og-card{position:relative;background:#fff;border:2px solid #e2e8f0;border-radius:18px;padding:1.6rem 1.2rem 1.3rem;box-shadow:0 4px 16px #1e40af14;display:flex;flex-direction:column}
+.og-card.pop{border-color:#f59e0b;background:linear-gradient(#fffbeb,#fff)}
+.og-card.pre{border-color:#7c3aed;background:linear-gradient(#f5f3ff,#fff)}
+.og-badge{position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:#f59e0b;color:#fff;font-size:.72rem;font-weight:800;padding:.25rem .8rem;border-radius:999px;white-space:nowrap}
+.og-card.pre .og-badge{background:#7c3aed}
+.og-card h3{margin:0;color:#1e3a8a;font-size:1.3rem;text-align:center}
+.og-tag{text-align:center;color:#64748b;font-size:.8rem;margin-bottom:.4rem}
+.og-price{text-align:center;font-size:2.7rem;font-weight:900;line-height:1.1}
+.og-price sup{font-size:1.1rem}.og-price small{font-size:.85rem;color:#64748b;font-weight:600}
+.og-old{text-align:center;color:#b45309;font-size:.78rem;font-weight:700}
+.og-tot{text-align:center;color:#475569;font-size:.85rem}
+.og-save{text-align:center;margin:.3rem 0 .6rem;min-height:1.4rem}
+.og-save span{background:#dcfce7;color:#166534;font-size:.75rem;font-weight:800;border-radius:999px;padding:.15rem .6rem}
+.og-users{text-align:center;font-weight:700;color:#1e40af;background:#eff6ff;border-radius:10px;padding:.35rem;margin-bottom:.6rem;font-size:.88rem}
+.og-int{font-size:.82rem;color:#475569;margin:.2rem 0 .4rem;font-weight:600}
+.og-card ul{list-style:none;padding:0;margin:0 0 1rem;flex:1;font-size:.88rem;line-height:1.5}
+.og-card li{padding:.15rem 0 .15rem 1.5rem;position:relative}
+.og-card li.y::before{content:"✔";position:absolute;left:0;color:#16a34a;font-weight:900}
+.og-card li.n{color:#94a3b8;text-decoration:line-through}
+.og-card li.n::before{content:"✖";position:absolute;left:0;color:#dc2626}
+.og-card .pf-btn{width:100%}
+</style>
+<script id="onlgPlanPatch">
+(function () {
+  /* ---------- 1) PLANES (una sola fuente de verdad; el 12 meses SIEMPRE es el más barato por mes) ---------- */
+  const ORD = ['estandar', 'crecimiento', 'premium'];
+  const LBL = { estandar: 'Estándar', crecimiento: 'Crecimiento', premium: 'Premium' };
+  const DISC = { 1: 0, 3: 10, 6: 15, 12: 25 };               // % de descuento por pagar por adelantado
+  const TIERS = [
+    { id: 'estandar', p: 'es', n: 'Estándar', base: 100, tag: 'Para empezar', users: 'Tú + 1 empleado',
+      intro: 'Lo esencial para vender y controlar tu pulpería:',
+      yes: ['Dashboard y gráfico de ventas', 'Inventario con alertas de stock bajo', 'Nueva venta y facturación', 'Factura en rollo de impresora 80 mm', 'Historial de ventas', 'Clientes, deudas y cuentas de crédito', 'Reporte del día e impresión', 'Copia de seguridad'],
+      no: ['Proveedores', 'Promociones y campañas', 'Caja y cuadre'] },
+    { id: 'crecimiento', p: 'cr', n: 'Crecimiento', base: 200, tag: 'Para crecer', users: 'Hasta 5 usuarios', badge: '⭐ El más elegido',
+      intro: 'Todo lo de Estándar, y además:',
+      yes: ['Proveedores y comparación de precios', 'Promociones y campañas', '3 diseños de factura (rollo, Moderna y Minimalista) con color', 'Reportes en PDF y Excel', 'Hasta 5 usuarios'],
+      no: ['Caja y cuadre'] },
+    { id: 'premium', p: 'pr', n: 'Premium', base: 350, tag: 'Todo incluido', users: 'Usuarios ilimitados', badge: '💎 Todo incluido',
+      intro: 'Todo lo de Crecimiento, y además:',
+      yes: ['Caja y cuadre por cajero con cierre automático', 'Los 5 diseños de factura con color', 'Usuarios ilimitados', 'Todas las funciones, sin restricciones'], no: [] }
+  ];
+  const rate = () => PLATFORM_CONFIG.lpsRate || 26.5;
+  PLATFORM_CONFIG.plans = [];
+  TIERS.forEach(t => [1, 3, 6, 12].forEach(m => {
+    const lps = Math.round(t.base * m * (100 - DISC[m]) / 100);
+    PLATFORM_CONFIG.plans.push({ id: t.p + m, name: t.n + ' · ' + m + (m === 1 ? ' mes' : ' meses'), months: m, price: Math.round(lps / rate() * 100) / 100, lps, tier: t.id, popular: t.id === 'crecimiento' && m === 1, best: m === 12 });
+  }));
+  PLATFORM_CONFIG.mainPlans = [];
+  PF_BASE_PLANS = PLATFORM_CONFIG.plans.map(p => Object.assign({}, p));
+  window.pfLoadPlans = async function () { PF_BASE_PLANS = PLATFORM_CONFIG.plans.map(p => Object.assign({}, p)); pfRenderPlans(); };  // los planes viven en el código, no se sobrescriben desde la BD
+
+  let PER = 12;
+  window.onlgPeriod = function (m) { PER = m; pfRenderPlans(); };
+  function card(t, act, lab) {
+    const p = PLATFORM_CONFIG.plans.find(x => x.tier === t.id && x.months === PER); if (!p) return '';
+    const lps = pfPlanLps(p), per = lps / PER, full = t.base * PER, ref = p.listLps || lps, save = Math.round((1 - ref / full) * 100);
+    return '<div class="og-card ' + (t.id === 'crecimiento' ? 'pop' : t.id === 'premium' ? 'pre' : '') + '">' + (t.badge ? '<span class="og-badge">' + t.badge + '</span>' : '') +
+      '<h3>' + t.n + '</h3><div class="og-tag">' + t.tag + '</div>' +
+      (p.listLps ? '<div class="og-old">🎁 Descuento aplicado: antes ' + pfL(p.listLps) + '</div>' : '') +
+      '<div class="og-price"><sup>L</sup>' + pfN(per) + '<small>/mes</small></div>' +
+      '<div class="og-tot">' + (PER === 1 ? 'Pagas ' + pfL(lps) + ' cada mes' : 'Pagas ' + pfL(lps) + ' por ' + PER + ' meses') + ' · ≈ $' + pfFmt(p.price) + ' USD</div>' +
+      '<div class="og-save">' + (save > 0 ? '<span>Ahorras ' + save + '% (' + pfL(full - ref) + ')</span>' : '') + '</div>' +
+      '<div class="og-users">👥 ' + t.users + '</div><div class="og-int">' + t.intro + '</div>' +
+      '<ul>' + t.yes.map(x => '<li class="y">' + x + '</li>').join('') + t.no.map(x => '<li class="n">' + x + '</li>').join('') + '</ul>' +
+      '<button class="pf-btn" onclick="' + act(p) + '">' + lab + '</button></div>';
+  }
+  window.pfRenderPlans = function () {
+    [[document.querySelector('#pfPlans .pf-grid'), () => "pfView('auth');pfTab('up')", 'Empezar'], [gid('pfPlanList'), p => "pfChoose('" + p.id + "')", 'Elegir este plan']].forEach(function (c) {
+      const el = c[0]; if (!el) return;
+      ['pfTierBarL', 'pfTierBarP'].forEach(id => { const b = gid(id); if (b) b.remove(); });
+      el.style.display = 'block';
+      el.innerHTML = '<div class="og-per">' + [1, 3, 6, 12].map(m => '<button type="button" class="' + (m === PER ? 'on' : '') + '" onclick="onlgPeriod(' + m + ')">' + (m === 1 ? '1 mes' : m + ' meses') + (DISC[m] ? '<small>' + (m === 12 ? 'Mejor ahorro ' : 'Ahorra ') + DISC[m] + '%</small>' : '') + '</button>').join('') + '</div>' +
+        '<div class="og-grid">' + TIERS.map(t => card(t, c[1], c[2])).join('') + '</div><p class="pf-fnote">Todos los planes se pueden cancelar cuando quieras. Sin cobros automáticos.</p>';
+    });
+  };
+  const _faq = window.pfFaqList;
+  if (_faq) window.pfFaqList = function () { return _faq().map(x => x[0] === 'plans' ? ['plans', '¿Qué plan me conviene?', '<b>Estándar</b> incluye lo esencial para una pulpería y permite al propietario más 1 empleado. <b>Crecimiento</b> agrega proveedores, promociones, diseños de factura y reportes PDF/Excel para hasta 5 usuarios. <b>Premium</b> incluye todas las funciones y usuarios ilimitados. Elige 1, 3, 6 o 12 meses; el plazo de 12 meses ofrece el mayor ahorro.'] : x[0] === 'pay' ? ['pay', '¿Cómo pago?', 'Elige el plan y paga con tarjeta de crédito o débito mediante el procesador habilitado. Las tarjetas disponibles dependen de la cuenta del procesador y del país.'] : x); };
+  setTimeout(() => { try { pfRenderPlans(); } catch (e) {} }, 100);
+
+  /* ---------- 2) FUNCIONES POR PLAN dentro del sistema ---------- */
+  const PAGE_MIN = { suppliers: 'crecimiento', promotions: 'crecimiento', cashier: 'premium' };
+  const PAGE_NAME = { suppliers: 'Proveedores', promotions: 'Promos y Campañas', cashier: 'Caja y Cuadre' };
+  const IVT_OK = { estandar: [5], crecimiento: [1, 4, 5], premium: [1, 2, 3, 4, 5] };
+  const USERS = { estandar: 2, crecimiento: 5, premium: 0 };
+  window.onlgTier = function () { const t = sessionStorage.getItem('pfTier') || '', m = { regular: 'estandar', completo: 'premium' }[t] || t; return ORD.includes(m) ? m : 'premium'; };
+  window.onlgHas = min => ORD.indexOf(onlgTier()) >= ORD.indexOf(min);
+  const deny = f => { alert(f + ' está disponible desde el plan ' + LBL[Object.keys(PAGE_MIN).includes(f) ? PAGE_MIN[f] : 'crecimiento'] + '. Actualiza tu membresía para usarlo.'); };
+
+  const _sp = window.showPage;
+  window.showPage = function (p) { if (PAGE_MIN[p] && !onlgHas(PAGE_MIN[p])) { alert('«' + PAGE_NAME[p] + '» está disponible desde el plan ' + LBL[PAGE_MIN[p]] + '. Actualiza tu membresía para usarlo.'); return; } return _sp.apply(this, arguments); };
+  function lockNav() {
+    Object.keys(PAGE_MIN).forEach(p => { const a = document.querySelector('.nav-link[data-page="' + p + '"]'); if (!a) return; const lock = !onlgHas(PAGE_MIN[p]), s = a.querySelector('.og-lock');
+      if (lock && !s) a.insertAdjacentHTML('beforeend', '<i class="fas fa-lock og-lock" style="margin-left:auto;opacity:.7"></i>'); if (!lock && s) s.remove(); });
+    const c = gid('cashSettingsCard'); if (c) c.style.display = onlgHas('premium') ? '' : 'none';
+  }
+  const _arp = window.applyRolePermissions; window.applyRolePermissions = function () { _arp.apply(this, arguments); try { lockNav(); } catch (e) {} };
+
+  // Sin Premium no hay cajas: las ventas se hacen sin abrir turno
+  const _rocs = window.requireOpenCashSession;
+  window.requireOpenCashSession = function () { if (onlgHas('premium')) return _rocs.apply(this, arguments); const u = myProfile(); return { id: null, register: u.register || '' }; };
+
+  // Límite de usuarios por plan
+  window.pfUserLimitOk = function () { const max = USERS[onlgTier()]; if (max > 0 && (appData.users || []).length >= max) { alert('Tu plan ' + LBL[onlgTier()] + ' permite hasta ' + max + ' usuarios. Para agregar más cambia al plan ' + (onlgTier() === 'estandar' ? 'Crecimiento o Premium' : 'Premium (usuarios ilimitados)') + '.'); return false; } return true; };
+
+  // Diseños de factura permitidos
+  window.ivtCfg = function () { const c = appData.company || {}, al = IVT_OK[onlgTier()]; let n = parseInt(c.invoiceTemplate) || 1; if (!al.includes(n)) n = al.includes(5) ? 5 : al[0];
+    const col = (c.invoiceColors && /^#[0-9a-f]{6}$/i.test(c.invoiceColors[n] || '') && c.invoiceColors[n]) || IVT_DEF[n - 1]; return { n, col }; };
+  const _tpl = window.ivtSetTpl; window.ivtSetTpl = function (n) { if (!IVT_OK[onlgTier()].includes(n)) { alert('Ese diseño de factura no está incluido en tu plan ' + LBL[onlgTier()] + '. Actualiza tu membresía.'); return; } return _tpl.apply(this, arguments); };
+  const _ui = window.ivtUI; window.ivtUI = function () { const r = _ui.apply(this, arguments); document.querySelectorAll('#ivtBox button[onclick^="ivtSetTpl("]').forEach(b => { const n = +b.getAttribute('onclick').match(/\d+/)[0]; if (!IVT_OK[onlgTier()].includes(n)) { b.style.opacity = '.4'; b.insertAdjacentHTML('beforeend', '<div style="font-size:.7rem">🔒 Plan superior</div>'); } }); return r; };
+
+  // Exportar PDF / Excel desde Crecimiento
+  ['generatePDFReport', 'exportToExcel'].forEach(f => { const o = window[f]; window[f] = function () { if (!onlgHas('crecimiento')) { alert('Los reportes en PDF y Excel están disponibles desde el plan Crecimiento.'); return; } return o.apply(this, arguments); }; });
+
+  /* ---------- 3) RUTA DEL PROPIETARIO: tusitio.com/#propietario ---------- */
+  const on = () => /^#propietario/i.test(location.hash);
+  const _po = window.pfOwner; window.pfOwner = function () { if (!on()) history.replaceState(null, '', '#propietario'); return _po.apply(this, arguments); };
+  const _pe = window.pfOwnerExit; window.pfOwnerExit = function () { history.replaceState(null, '', location.pathname + location.search); return _pe.apply(this, arguments); };
+  const _ab = window.pfAfterBoot; window.pfAfterBoot = async function () { await _ab.apply(this, arguments); if (on()) pfOwner(); };
+  window.addEventListener('hashchange', () => { if (on()) pfOwner(); });
+  document.querySelectorAll('.pf-foot a').forEach(a => { a.href = '#propietario'; });
+})();
+</script>
+
+
+<script id="staffModule">
+/* ==================== PERSONAL: COBRADORES Y MANTENIMIENTO ====================
+   Propietario: pestaña "Usuarios" (agrega, activa/desactiva, elimina y ve lo que cobró cada uno).
+   Personal: entra por "Acceso personal" (#personal), cobra en efectivo y entrega/envía el recibo.
+   Requiere ejecutar una vez supabase_personal_cobradores.sql (aditivo). */
+(function () {
+    'use strict';
+    const ROLES = { cobrador: 'Cobrador', mantenimiento: 'Mantenimiento' };
+    const esc = s => escapeHtml(String(s == null ? '' : s));
+    const ST = { rows: [], loaded: false, err: '' };               // lado propietario
+    const S = { me: null, accounts: [], visits: [], mine: [], tab: 'cobrar', visit: null, busy: false, filter: '' }; // lado personal
+    const sbErr = e => (e && /platform_staff|staff_|schema cache|does not exist/i.test(e.message || '')) ? 'Falta ejecutar supabase_personal_cobradores.sql en Supabase.' : ((e && e.message) || 'Error de conexión.');
+
+    /* ---------- PROPIETARIO: pestaña Usuarios ---------- */
+    async function loadOwner() {
+        await sbReady(); const sb = cloud(); if (!sb) return;
+        const r = await sb.from('platform_staff').select('*').order('created_at');
+        if (r.error) { ST.err = sbErr(r.error); ST.rows = []; } else { ST.err = ''; ST.rows = r.data || []; }
+        ST.loaded = true;
+    }
+    function renderOwner() {
+        const box = gid('stOwnerBox'); if (!box) return;
+        const db = pfDB(), pays = db.payments.filter(p => p.staff_id && p.status === 'approved');
+        const state = r => !r.active ? '<span style="color:#b91c1c">Desactivado</span>' : r.user_id ? '<span style="color:#166534">Activo</span>' : '<span style="color:#b45309">Falta crear su acceso</span>';
+        const rows = ST.rows.map(r => {
+            const mine = pays.filter(p => p.staff_id === r.user_id), tot = mine.reduce((n, p) => n + Number(p.price || 0), 0);
+            return '<tr><td><b>' + esc(r.name) + '</b></td><td>' + esc(r.email) + '<br><small>' + esc(r.phone || '') + '</small></td><td>' + esc(ROLES[r.role] || r.role) + '</td><td>' + state(r) +
+                (r.last_login ? '<br><small>Último acceso: ' + new Date(r.last_login).toLocaleString('es-HN') + '</small>' : '') + '</td><td>' + mine.length + ' · $' + pfFmt(tot) + '</td><td>' +
+                '<button class="pf-btn alt" onclick="stToggle(\'' + r.id + '\')">' + (r.active ? 'Desactivar' : 'Activar') + '</button> <button class="pf-btn alt" onclick="stDelete(\'' + r.id + '\')">Eliminar</button></td></tr>';
+        }).join('');
+        const L = pays.slice().sort((a, b) => new Date(b.at) - new Date(a.at)).slice(0, 40);
+        const names = {}; ST.rows.forEach(r => { if (r.user_id) names[r.user_id] = r.name; });
+        box.innerHTML = (ST.err ? '<p style="color:#b91c1c;font-weight:700">' + esc(ST.err) + '</p>' : '') +
+            '<div class="pf-box" style="max-width:560px;margin:1rem 0"><h3><i class="fas fa-user-plus"></i> Agregar usuario del personal</h3>' +
+            '<p style="font-size:.82rem;color:#64748b;margin:0 0 .6rem">Cobradores y personal de mantenimiento pueden registrar pagos en efectivo y entregar o enviar el recibo al cliente. Tú (propietario) ves todo lo que hacen.</p>' +
+            '<label class="pf-l">Nombre completo</label><input id="stName" autocomplete="off"><label class="pf-l">Correo (con él creará su acceso)</label><input type="email" id="stMail" autocomplete="off">' +
+            '<label class="pf-l">Teléfono</label><input type="tel" id="stPhone" autocomplete="off" placeholder="Ej: 9999-9999"><label class="pf-l">Rol</label>' +
+            '<select id="stRole"><option value="cobrador">Cobrador</option><option value="mantenimiento">Mantenimiento</option></select>' +
+            '<button class="pf-btn pf-full" style="margin-top:.6rem" onclick="stAdd()"><i class="fas fa-plus"></i> Agregar</button></div>' +
+            '<h3>Personal (' + ST.rows.length + ')</h3>' + (ST.rows.length ? pfWrap('<table class="pf-t"><tr><th>Nombre</th><th>Contacto</th><th>Rol</th><th>Estado</th><th>Cobros · Total</th><th></th></tr>' + rows + '</table>') : '<p style="color:#64748b">Aún no has agregado personal.</p>') +
+            '<h3>Últimos cobros del personal</h3>' + (L.length ? pfWrap('<table class="pf-t"><tr><th>Fecha</th><th>Cobró</th><th>Pulpería</th><th>Detalle</th><th></th></tr>' + L.map(p => { const a = db.accounts.find(x => x.id === p.accId) || {}; return '<tr><td>' + new Date(p.at).toLocaleDateString('es-HN') + '</td><td>' + esc(p.collectedBy || names[p.staff_id] || '') + '<br><small>' + esc(ROLES[p.collectedRole] || '') + '</small></td><td>' + esc(a.business || '') + '</td><td>' + p.months + ' m · $' + pfFmt(p.price) + '<br><small>' + esc(p.receiptNo || '') + '</small></td><td><button class="pf-btn" onclick="pfPrintPay(\'' + p.id + '\')">Recibo</button></td></tr>'; }).join('') + '</table>') : '<p style="color:#64748b">Todavía no hay cobros del personal.</p>');
+    }
+    window.pfTabStaff = function () {
+        if (!cloudOn()) return '<div class="pf-box" style="max-width:560px;margin:1rem 0"><h3>Usuarios del personal</h3><p>Esta función necesita la base de datos Supabase conectada.</p></div>';
+        setTimeout(async () => { try { await loadOwner(); } catch (e) { ST.err = sbErr(e); } renderOwner(); }, 0);
+        return '<div id="stOwnerBox"><p style="color:#64748b">Cargando…</p></div>';
+    };
+    window.stAdd = async function () {
+        const name = gid('stName').value.trim(), mail = gid('stMail').value.trim().toLowerCase(), ph = gid('stPhone').value.trim(), role = gid('stRole').value;
+        if (name.length < 3) return pfMsg('Escribe el nombre completo.'); if (!/^\S+@\S+\.\S+$/.test(mail)) return pfMsg('Escribe un correo válido.'); if (!pfPhoneOk(ph)) return pfMsg('Escribe un teléfono válido.');
+        if (!ROLES[role]) return pfMsg('Elige el rol.');
+        await sbReady(); const r = await cloud().from('platform_staff').insert({ email: mail, name, phone: pfPhoneNorm(ph), role });
+        if (r.error) return pfMsg(r.error.code === '23505' ? 'Ese correo ya está en la lista del personal.' : sbErr(r.error));
+        await loadOwner(); renderOwner(); pfMsg(name + ' agregado ✔. Dile que entre a "Acceso personal" → "Crear mi acceso" con ' + mail + '.', true);
+    };
+    window.stToggle = async function (id) {
+        const r0 = ST.rows.find(x => x.id === id); if (!r0) return;
+        const r = await cloud().from('platform_staff').update({ active: !r0.active }).eq('id', id);
+        if (r.error) return pfMsg(sbErr(r.error)); await loadOwner(); renderOwner(); pfMsg(r0.active ? 'Acceso desactivado ✔' : 'Acceso activado ✔', true);
+    };
+    window.stDelete = async function (id) {
+        const r0 = ST.rows.find(x => x.id === id); if (!r0) return;
+        if (!confirm('¿Eliminar a ' + r0.name + ' del personal? Ya no podrá entrar. Sus cobros anteriores se conservan.')) return;
+        const r = await cloud().from('platform_staff').delete().eq('id', id);
+        if (r.error) return pfMsg(sbErr(r.error)); await loadOwner(); renderOwner(); pfMsg('Eliminado ✔', true);
+    };
+
+    /* ---------- Recibo: quién lo cobró + enviar por documento ---------- */
+    const _rh = window.pfReceiptHTML;
+    window.pfReceiptHTML = function (p, a, db) {
+        pfReceiptHTML.last = { p, a }; db = db || {};
+        if (p && p.collectedBy) {
+            const nm = p.collectedBy + (p.collectedRole ? ' (' + (ROLES[p.collectedRole] || p.collectedRole) + ')' : '');
+            return _rh(p, a, Object.assign({}, db, { owner: Object.assign({}, db.owner, { name: nm }) }));
+        }
+        return _rh(p, a, db);
+    };
+    const _sd = window.pfShowDoc;
+    window.pfShowDoc = function (html) {
+        _sd.apply(this, arguments);
+        const last = pfReceiptHTML.last; if (!last || !/Recibo de pago de membres/.test(html)) return;
+        const bar = document.querySelector('#pfOv > div'); if (!bar) return;
+        bar.style.flexWrap = 'wrap'; pfShowDoc.cur = { html, p: last.p, a: last.a };
+        bar.insertAdjacentHTML('afterbegin', '<button class="pf-btn" onclick="stShare()"><i class="fas fa-share-nodes"></i> Compartir</button><button class="pf-btn" onclick="stDownload()"><i class="fas fa-download"></i> Descargar</button><button class="pf-btn" style="background:#16a34a" onclick="stWhats()"><i class="fab fa-whatsapp"></i> WhatsApp</button><button class="pf-btn alt" onclick="stMail()"><i class="fas fa-envelope"></i> Correo</button>');
+    };
+    function recText() {
+        const c = pfShowDoc.cur; if (!c) return ''; const p = c.p, a = c.a, lbl = (p.monthsLabels || []).join(', ');
+        return 'RECIBO ' + (p.receiptNo || '') + ' · ' + pfSet().company + '\nNegocio: ' + (a.business || '') + '\nMeses pagados: ' + p.months + (lbl ? ' (' + lbl + ')' : '') + '\nTotal: ' + pfAmtPay(p) + '\nMétodo: ' + p.method + '\nVálido hasta: ' + new Date(p.until || a.expiresAt).toLocaleDateString('es-HN') + (p.collectedBy ? '\nRecibido por: ' + p.collectedBy : '') + '\nGracias por confiar en nosotros.';
+    }
+    function recFile() { const c = pfShowDoc.cur; return new File([c.html], 'Recibo-' + (c.p.receiptNo || 'ONLG') + '.html', { type: 'text/html' }); }
+    window.stDownload = function () { if (!pfShowDoc.cur) return; const f = recFile(), u = URL.createObjectURL(f), l = document.createElement('a'); l.href = u; l.download = f.name; document.body.appendChild(l); l.click(); l.remove(); setTimeout(() => URL.revokeObjectURL(u), 3000); };
+    window.stShare = async function () {
+        if (!pfShowDoc.cur) return; const f = recFile();
+        try { if (navigator.canShare && navigator.canShare({ files: [f] })) return await navigator.share({ files: [f], title: f.name, text: recText() }); } catch (e) { if (e && e.name === 'AbortError') return; }
+        stDownload(); alert('Tu navegador no puede compartir archivos. Se descargó el recibo: adjúntalo en WhatsApp o en tu correo.');
+    };
+    window.stWhats = function () { if (pfShowDoc.cur) window.open('https://wa.me/?text=' + encodeURIComponent(recText()), '_blank', 'noopener'); };
+    window.stMail = function () { const c = pfShowDoc.cur; if (c) location.href = 'mailto:' + (c.a.email || '') + '?subject=' + encodeURIComponent('Recibo ' + (c.p.receiptNo || '')) + '&body=' + encodeURIComponent(recText()); };
+
+    /* ---------- PERSONAL: acceso ---------- */
+    function loginBox(tab) {
+        const on = t => t === tab ? ' on' : '';
+        const head = '<div class="pf-tabs" style="max-width:430px;margin:0 auto 1rem"><button class="pf-tab' + on('in') + '" onclick="stForm(\'in\')">Entrar</button><button class="pf-tab' + on('up') + '" onclick="stForm(\'up\')">Crear mi acceso</button></div>';
+        if (tab === 'up') return '<div class="pf-box" style="max-width:430px;margin:0 auto">' + head + '<h3><i class="fas fa-id-badge"></i> Crear mi acceso</h3><p style="font-size:.82rem;color:#64748b">Usa el correo y el teléfono que registró el propietario. Tú eliges tu contraseña.</p><label class="pf-l">Correo</label><input type="email" id="stMail2" autocomplete="off"><label class="pf-l">Teléfono</label><input type="tel" id="stPhone2" autocomplete="off" placeholder="Ej: 9999-9999"><label class="pf-l">Contraseña (mín. 12, con mayúscula, número y símbolo)</label>' + pfPassField('stPw2', 'Contraseña') + '<label class="pf-l">Confirmar contraseña</label>' + pfPassField('stPw3', 'Repite la contraseña') + '<button class="pf-btn pf-full" onclick="stRegister()">Crear acceso</button></div>';
+        return '<div class="pf-box" style="max-width:430px;margin:0 auto">' + head + '<h3><i class="fas fa-user-tag"></i> Acceso personal</h3><label class="pf-l">Correo</label><input type="email" id="stMail1" autocomplete="off"><label class="pf-l">Teléfono</label><input type="tel" id="stPhone1" autocomplete="off" placeholder="Ej: 9999-9999"><label class="pf-l">Contraseña</label>' + pfPassField('stPw1', 'Contraseña') + '<button class="pf-btn pf-full" onclick="stLogin()">Entrar</button></div>';
+    }
+    window.stForm = function (t) { pfMsg(''); gid('pfOwnerBody').innerHTML = loginBox(t); };
+    window.pfStaff = function () {
+        pfView('owner'); const box = gid('pfOwnerBody');
+        if (!cloudOn()) { box.innerHTML = '<div class="pf-box"><h3>Acceso personal</h3><p>Esta función necesita la base de datos conectada.</p></div>'; return; }
+        if (S.me) return panel(); box.innerHTML = loginBox('in');
+    };
+    function otpBox(mail, phone) {
+        S.otp = { mail, phone };
+        gid('pfOwnerBody').innerHTML = '<div class="pf-box" style="max-width:430px;margin:0 auto"><h3>Confirma tu correo</h3><p>Te enviamos un código a <b>' + esc(mail) + '</b>.</p><input id="stOtp" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="••••••" oninput="this.value=this.value.replace(/[^0-9]/g,String())"><button class="pf-btn pf-full" onclick="stOtpVerify()">Confirmar y entrar</button><button class="pf-btn alt pf-full" style="margin-top:.5rem" onclick="stOtpResend()">Reenviar código</button></div>';
+    }
+    const guard = (k, fn) => pfGuard(k, fn, true);
+    window.stRegister = guard('staff-up', async function () {
+        await sbReady(); const sb = cloud(), mail = gid('stMail2').value.trim().toLowerCase(), ph = gid('stPhone2').value, pw = gid('stPw2').value, pw2 = gid('stPw3').value;
+        if (!/^\S+@\S+\.\S+$/.test(mail)) return pfMsg('Escribe tu correo.'); if (!pfPhoneOk(ph)) return pfMsg('Escribe tu teléfono.');
+        const e = pfPwErrors(pw, { email: mail, phone: ph }); if (e.length) return pfMsg('Contraseña débil. Falta: ' + e.join(', ') + '.'); if (pw !== pw2) return pfMsg('Las contraseñas no coinciden.');
+        const ok = await sb.rpc('staff_email_ok', { p_email: mail }); if (ok.error) return pfMsg(sbErr(ok.error));
+        if (!ok.data) return pfMsg('Ese correo no está registrado como personal. Pide al propietario que te agregue.');
+        const r = await sb.auth.signUp({ email: mail, password: pw, options: { data: { staff: true } } });
+        if (r.error) return pfMsg(pfSbErr(r.error));
+        if (r.data.user && r.data.user.identities && r.data.user.identities.length === 0) return pfMsg('Ese correo ya tiene cuenta. Usa "Entrar".');
+        if (r.data.session) return afterAuth(ph); otpBox(mail, ph);
+    });
+    window.stOtpVerify = async function () {
+        const tok = gid('stOtp').value.replace(/\D/g, ''); if (tok.length < 6) return pfMsg('Escribe el código de 6 dígitos.');
+        await sbReady(); const r = await cloud().auth.verifyOtp({ email: S.otp.mail, token: tok, type: 'signup' });
+        if (r.error || !r.data.session) return pfMsg('Código incorrecto o vencido. Pide uno nuevo.'); afterAuth(S.otp.phone);
+    };
+    window.stOtpResend = async function () { const r = await cloud().auth.resend({ type: 'signup', email: S.otp.mail }); pfMsg(r.error ? pfSbErr(r.error) : 'Código enviado. Revisa tu bandeja y el spam.', !r.error); };
+    window.stLogin = guard('staff-in', async function () {
+        await sbReady(); const sb = cloud(), mail = gid('stMail1').value.trim().toLowerCase(), ph = gid('stPhone1').value;
+        const r = await sb.auth.signInWithPassword({ email: mail, password: gid('stPw1').value });
+        if (r.error) { if (/not confirmed/i.test(r.error.message)) { await sb.auth.resend({ type: 'signup', email: mail }); return otpBox(mail, ph); } return pfMsg(pfSbErr(r.error)); }
+        await afterAuth(ph);
+    });
+    async function afterAuth(phone) {
+        const sb = cloud(), c = await sb.rpc('staff_claim'), d = c.data || {};
+        const bad = async m => { await sb.auth.signOut({ scope: 'local' }); pfMsg(m); };
+        if (c.error) return bad(sbErr(c.error));
+        if (d.error) return bad({ not_staff: 'Este correo no está registrado como personal.', inactive: 'Tu acceso está desactivado. Habla con el propietario.', not_confirmed: 'Confirma tu correo primero.' }[d.error] || 'No se pudo entrar.');
+        if (pfPhoneNorm(d.phone) !== pfPhoneNorm(phone)) return bad('Correo, teléfono o contraseña incorrectos.');
+        S.me = d; S.tab = 'cobrar'; gid('pfOwnerBody').innerHTML = '<p style="text-align:center">Cargando…</p>';
+        try { await load(); } catch (e) { return bad(sbErr(e)); }
+        panel(); try { pfNotify('login', 'Personal ' + d.name + ' (' + (ROLES[d.role] || d.role) + ')', { actor: d.name }); } catch (e) {}
+    }
+    async function load() {
+        const sb = cloud();
+        const [a, v, m, s] = await Promise.all([sb.rpc('staff_accounts'), sb.rpc('staff_visits'), sb.rpc('staff_payments'), sb.from('platform_settings').select('data').eq('id', 1).maybeSingle()]);
+        if (a.error) throw a.error; if (a.data && a.data.error) throw new Error('not_staff');
+        S.accounts = ((a.data && a.data.accounts) || []).map(rowAcc);
+        S.visits = ((v.data && v.data.visits) || []).map(rowVis);
+        S.mine = ((m.data && m.data.payments) || []).map(rowPay);
+        if (s && s.data && s.data.data) { const db = pfDB(); db.settings = s.data.data; _pfSaveRaw(db); }
+    }
+    window.pfStaffSync = async function () { try { await load(); panel(); pfMsg('Sincronizado ✔', true); } catch (e) { pfMsg(sbErr(e)); } };
+    window.pfStaffExit = async function () {
+        S.me = null; try { await cloud().auth.signOut({ scope: 'local' }); } catch (e) {}
+        Object.keys(sessionStorage).filter(k => k.startsWith('sb-')).forEach(k => sessionStorage.removeItem(k)); Object.keys(localStorage).filter(k => k.startsWith('sb-')).forEach(k => localStorage.removeItem(k));
+        history.replaceState(null, '', location.pathname + location.search); pfView('land');
+    };
+
+    /* ---------- PERSONAL: panel ---------- */
+    window.stTab = function (t) { S.tab = t; panel(); };
+    function panel() {
+        pfView('owner'); const box = gid('pfOwnerBody'), tb = S.tab, tabs = [['cobrar', 'Cobrar' + (S.visits.length ? ' (' + S.visits.length + ')' : '')], ['cuentas', 'Cuentas'], ['mios', 'Mis cobros']];
+        const body = tb === 'cuentas' ? tabCuentas() : tb === 'mios' ? tabMios() : tabCobrar();
+        box.innerHTML = '<h2>Hola, ' + esc(S.me.name) + '</h2><p style="color:#64748b;margin:-.4rem 0 .8rem">' + esc(ROLES[S.me.role] || S.me.role) + '</p><div class="pf-tabs" style="max-width:640px">' + tabs.map(x => '<button class="pf-tab' + (x[0] === tb ? ' on' : '') + '" onclick="stTab(\'' + x[0] + '\')">' + x[1] + '</button>').join('') + '</div>' + body + '<p><button class="pf-btn alt" onclick="pfStaffExit()">Salir</button> <button class="pf-btn" onclick="pfStaffSync()">↻ Sincronizar</button></p>';
+        if (tb === 'cobrar') stPreview(false);
+    }
+    function opts(q) {
+        q = (q || '').toLowerCase(); const L = S.accounts.filter(a => !q || (a.business + ' ' + a.email + ' ' + a.name).toLowerCase().includes(q));
+        return L.map(a => '<option value="' + a.id + '">' + esc(a.business) + ' — ' + esc(a.email) + '</option>').join('') || '<option value="">Sin resultados</option>';
+    }
+    function tabCobrar() {
+        const V = S.visits, vis = '<h3>Visitas solicitadas (' + V.length + ')</h3>' + (V.length ? pfWrap('<table class="pf-t"><tr><th>Cliente</th><th>Contacto</th><th>Plan</th><th></th></tr>' + V.map(v => { const a = S.accounts.find(x => x.id === v.accId) || {}; return '<tr><td>' + esc(a.business || '') + '<br><small>' + esc(a.name || '') + '</small></td><td><a href="tel:' + esc(v.phone) + '">' + esc(v.phone) + '</a><br><small>' + esc(v.address) + (v.note ? ' · ' + esc(v.note) : '') + '</small></td><td>' + v.months + ' m · $' + pfFmt(v.price) + '</td><td><button class="pf-btn" onclick="stVisitUse(\'' + v.id + '\')">Cobrar</button> <button class="pf-btn alt" onclick="stVisitClose(\'' + v.id + '\')">Cerrar</button></td></tr>'; }).join('') + '</table>') : '<p style="color:#64748b">No hay visitas pendientes.</p>');
+        return vis + '<div class="pf-box" style="max-width:560px;margin:1rem 0"><h3><i class="fas fa-money-bill-wave"></i> Registrar pago en efectivo</h3><label class="pf-l">Buscar cuenta</label><input id="stFind" placeholder="Nombre, pulpería o correo" oninput="stFilter()" value="' + esc(S.filter) + '"><label class="pf-l">Cuenta (pulpería)</label><select id="stAcc" onchange="stPreview(true)">' + opts(S.filter) + '</select>' +
+            '<label class="pf-l">¿Cuántos meses pagó?</label><input type="number" id="stMonths" min="1" max="36" value="1" oninput="stPreview(true)"><div id="stPrev" class="pf-info"></div><label class="pf-l">Monto recibido (USD)</label><input type="number" id="stAmt" step="0.01" min="0"><label class="pf-l">Nota (opcional)</label><input id="stNote" placeholder="Ej: pagó en el negocio" maxlength="200">' +
+            '<button class="pf-btn pf-full" onclick="stCash()"><i class="fas fa-receipt"></i> Registrar y generar recibo</button></div>';
+    }
+    window.stFilter = function () { S.filter = gid('stFind').value; gid('stAcc').innerHTML = opts(S.filter); stPreview(true); };
+    window.stPreview = function (setAmt) {
+        const a = S.accounts.find(x => x.id === (gid('stAcc') || {}).value), pv = gid('stPrev'); if (!pv) return; if (!a) { pv.textContent = 'No hay cuentas.'; return; }
+        const m = Math.max(1, parseInt(gid('stMonths').value) || 1), pl = PLATFORM_CONFIG.plans.find(p => p.months === m), amt = pl ? pl.price : +(PLATFORM_CONFIG.plans[0].price * m).toFixed(2);
+        if (setAmt || !gid('stAmt').value) gid('stAmt').value = amt;
+        const d = new Date(pfBase(a)); d.setMonth(d.getMonth() + m);
+        pv.innerHTML = '<div><span>Meses</span><b>' + pfMonthLabels(a, m).join(', ') + '</b></div><div><span>Quedará activa hasta</span><b>' + d.toLocaleDateString() + '</b></div>';
+    };
+    window.stCash = async function () {
+        if (S.busy) return; const a = S.accounts.find(x => x.id === gid('stAcc').value), m = parseInt(gid('stMonths').value), amt = parseFloat(gid('stAmt').value);
+        if (!a) return pfMsg('Elige una cuenta.'); if (!(m >= 1 && m <= 36)) return pfMsg('Meses: de 1 a 36.'); if (!(amt > 0)) return pfMsg('Escribe el monto recibido.');
+        if (!confirm('¿Registrar ' + m + ' mes(es) a ' + a.business + ' por $' + amt.toFixed(2) + ' USD recibidos en efectivo?')) return;
+        S.busy = true; const labels = pfMonthLabels(a, m);
+        try {
+            const r = await cloud().rpc('staff_cash', { p_tenant: a.id, p_months: m, p_amount: amt, p_note: gid('stNote').value.trim(), p_labels: labels, p_visit: S.visit || null }), d = r.data || {};
+            if (r.error || d.error) return pfMsg({ not_staff: 'Tu acceso no está activo.', bad_months: 'Meses: de 1 a 36.', bad_amount: 'Monto no válido.', no_tenant: 'La cuenta no existe.' }[d.error] || sbErr(r.error) || 'No se pudo registrar el pago.');
+            const p = rowPay(d.payment); p.monthsLabels = p.monthsLabels || labels; S.visit = null;
+            await load(); panel(); pfMsg('Pago registrado ✔', true); pfShowDoc(pfReceiptHTML(p, S.accounts.find(x => x.id === a.id) || a, {}));
+        } catch (e) { pfMsg(sbErr(e)); } finally { S.busy = false; }
+    };
+    window.stVisitUse = function (id) {
+        const v = S.visits.find(x => x.id === id); if (!v) return; S.visit = id; S.filter = ''; S.tab = 'cobrar'; panel();
+        gid('stAcc').value = v.accId; gid('stMonths').value = v.months; stPreview(true); gid('stAmt').value = v.price; gid('stNote').value = 'Visita de mantenimiento'; gid('stAcc').scrollIntoView({ behavior: 'smooth' });
+    };
+    window.stVisitClose = async function (id) {
+        const r = await cloud().rpc('staff_close_visit', { p_id: id, p_status: 'closed' }); if (r.error) return pfMsg(sbErr(r.error));
+        try { await load(); panel(); } catch (e) { pfMsg(sbErr(e)); }
+    };
+    function tabCuentas() {
+        return '<h3>Cuentas (' + S.accounts.length + ')</h3>' + pfWrap('<table class="pf-t"><tr><th>Negocio</th><th>Propietario</th><th>Correo</th><th>Estado</th></tr>' + S.accounts.map(a => '<tr><td><b>' + esc(a.business || 'Sin nombre') + '</b></td><td>' + esc(a.name || '') + '</td><td>' + esc(a.email || '') + '</td><td>' + pfAccState(a) + '</td></tr>').join('') + '</table>');
+    }
+    function tabMios() {
+        const L = S.mine.filter(p => p.status === 'approved'), tot = L.reduce((n, p) => n + Number(p.price || 0), 0);
+        return '<h3>Mis cobros (' + L.length + ') · $' + pfFmt(tot) + ' USD</h3>' + (L.length ? pfWrap('<table class="pf-t"><tr><th>Fecha</th><th>Pulpería</th><th>Detalle</th><th></th></tr>' + L.map(p => { const a = S.accounts.find(x => x.id === p.accId) || {}; return '<tr><td>' + new Date(p.at).toLocaleDateString('es-HN') + '</td><td>' + esc(a.business || '') + '</td><td>' + p.months + ' m · $' + pfFmt(p.price) + '<br><small>' + esc(p.receiptNo || '') + '</small></td><td><button class="pf-btn" onclick="stRecibo(\'' + p.id + '\')">Recibo</button></td></tr>'; }).join('') + '</table>') : '<p style="color:#64748b">Aún no has registrado cobros.</p>');
+    }
+    window.stRecibo = function (id) { const p = S.mine.find(x => x.id === id); if (p) pfShowDoc(pfReceiptHTML(p, S.accounts.find(x => x.id === p.accId) || {}, {})); };
+
+    /* ---------- Enlace en la página + ruta #personal ---------- */
+    function addLink() { document.querySelectorAll('.pf-foot').forEach(f => { if (!f.querySelector('.stLink')) f.insertAdjacentHTML('beforeend', ' · <a class="stLink" href="#personal">Acceso personal</a>'); }); }
+    const _pv = window.pfView; window.pfView = function () { const r = _pv.apply(this, arguments); addLink(); return r; };
+    const onHash = () => { if (location.hash === '#personal') pfStaff(); };
+    window.addEventListener('hashchange', onHash);
+    const _ab = window.pfAfterBoot; window.pfAfterBoot = async function () { await _ab.apply(this, arguments); onHash(); };
+    addLink();
+})();
+</script>
+
+<script id="loginExtras">
+/* ==================== LOGIN: Apple, teléfono + código por SMS, y pantalla de planes después de entrar ====================
+   Apple y SMS requieren activarse en Supabase (Authentication > Providers). Ver supabase_login_apple_telefono.sql */
+(function () {
+    const ph = { phone: '' };
+    const guard = (k, fn) => pfGuard(k, fn, true);
+    function errMsg(e) {
+        const m = (e && e.message) || '';
+        if (/provider.*(disabled|not enabled)|unsupported|not enabled|sms.*(fail|provider)|twilio|signups? not allowed/i.test(m)) return 'Este método aún no está activado. El propietario debe configurarlo en Supabase.';
+        if (/rate limit|too many|only request this after|seconds/i.test(m)) return 'Demasiados intentos. Espera un momento y vuelve a intentar.';
+        if (/invalid.*phone|phone.*invalid/i.test(m)) return 'El número de teléfono no es válido.';
+        if (/token|expired|invalid/i.test(m)) return 'Código incorrecto o vencido.';
+        return pfSbErr(e);
+    }
+
+    /* ---------- Apple ---------- */
+    window.pfNeedTerms = function () { const c = gid('upAcceptTerms'); if (c && !c.checked) { pfMsg('Debes aceptar los Términos y la Política de privacidad.'); return false; } return true; };
+    window.pfApple = async function () {
+        if (!cloudOn()) return pfMsg('Apple necesita la base de datos conectada.');
+        if (!pfBotOk()) return; await sbReady(); sessionStorage.setItem('pfOAuth', '1');
+        const r = await cloud().auth.signInWithOAuth({ provider: 'apple', options: { redirectTo: location.origin + location.pathname } });
+        if (r.error) { sessionStorage.removeItem('pfOAuth'); pfMsg(errMsg(r.error)); }
+    };
+
+    /* ---------- Teléfono + SMS ---------- */
+    function phStep(n) { gid('phS1').style.display = n === 1 ? 'block' : 'none'; gid('phS2').style.display = n === 2 ? 'block' : 'none'; if (n === 2) setTimeout(() => { const i = gid('phCode'); if (i) i.focus(); }, 50); }
+    window.pfPhoneView = function () {
+        ['in', 'up', 'cash'].forEach(x => { gid('pfT_' + x).style.display = 'none'; gid('pfB_' + x).className = 'pf-tab'; });
+        gid('pfT_ph').style.display = 'block'; phStep(1); pfMsg('');
+    };
+    async function sendCode(first) {
+        await sbReady(); const sb = cloud();
+        let cc = gid('phCc').value.replace(/\D/g, ''), num = gid('phNum').value.replace(/\D/g, '').replace(/^0+/, '');
+        if (!first && ph.phone) { /* reenvío al mismo número */ } else {
+            if (!cc || num.length < 6 || num.length > 12) return pfMsg('Escribe un número de teléfono válido.');
+            if (!gid('phTerms').checked) return pfMsg('Debes aceptar los Términos y la Política de privacidad.');
+            ph.phone = '+' + cc + num;
+        }
+        const data = {}, nm = gid('phName').value.trim(), bz = gid('phBiz').value.trim(); if (nm) data.name = nm; if (bz) data.business = bz;
+        const options = { shouldCreateUser: true, channel: 'sms', data };
+        if (PLATFORM_CONFIG.turnstileSiteKey && typeof _capTok !== 'undefined' && _capTok) options.captchaToken = _capTok;
+        const r = await sb.auth.signInWithOtp({ phone: ph.phone, options });
+        if (r.error) return pfMsg(errMsg(r.error));
+        gid('phSent').textContent = 'Te enviamos un código por SMS al ' + ph.phone + '.'; phStep(2); pfMsg('Código enviado ✔', true);
+    }
+    window.pfPhoneSend = guard('ph-send', () => sendCode(true));
+    window.pfPhoneResend = guard('ph-resend', () => sendCode(false));
+    window.pfPhoneVerify = guard('ph-verify', async function () {
+        const tok = gid('phCode').value.replace(/\D/g, ''); if (tok.length < 6) return pfMsg('Escribe el código de 6 dígitos que llegó por SMS.');
+        await sbReady(); const r = await cloud().auth.verifyOtp({ phone: ph.phone, token: tok, type: 'sms' });
+        if (r.error || !r.data || !r.data.session) return pfMsg('Código incorrecto o vencido. Pide uno nuevo con “Reenviar código”.');
+        await pfPull(); const acc = pfDB().accounts.find(a => a.id === r.data.user.id);
+        if (!acc) return pfMsg('No se pudo crear tu cuenta. Intenta de nuevo.');
+        pfNotify('login', 'Inicio con teléfono: ' + ph.phone.slice(0, -4) + '••••'); pfMsg('¡Listo!', true); pfProceed(acc);
+    });
+
+    /* ---------- Inyectar botones y panel en la pantalla de acceso ---------- */
+    function inject() {
+        const cash = gid('pfT_cash'); if (!cash) return;
+        if (!gid('pfT_ph')) {
+            const d = document.createElement('div'); d.id = 'pfT_ph'; d.style.display = 'none';
+            d.innerHTML = '<div id="phS1"><h3 style="margin:.2rem 0 .6rem"><i class="fas fa-mobile-screen"></i> Entrar con tu teléfono</h3>' +
+                '<p style="font-size:.82rem;color:#64748b;margin:0 0 .6rem">Te enviamos un código por mensaje de texto (SMS). Si es tu primera vez, se crea tu cuenta.</p>' +
+                '<label>Tu nombre (solo la primera vez)</label><input id="phName" autocomplete="name"><label>Nombre de tu pulpería (solo la primera vez)</label><input id="phBiz">' +
+                '<label>Número de teléfono</label><div style="display:grid;grid-template-columns:90px 1fr;gap:.4rem"><input id="phCc" value="+504" inputmode="tel" aria-label="Código del país"><input id="phNum" type="tel" inputmode="tel" placeholder="9999-9999" autocomplete="tel-national"></div>' +
+                '<label style="display:flex;gap:.55rem;align-items:flex-start;font-size:.82rem;margin:.8rem 0;color:#334155"><input type="checkbox" id="phTerms" style="width:auto;margin-top:.2rem"> <span>Acepto los <a href="#" onclick="pfLegalOpen(\'terms\');return false">Términos y condiciones</a> y la <a href="#" onclick="pfLegalOpen(\'privacy\');return false">Política de privacidad</a>.</span></label>' +
+                '<button class="pf-btn" style="width:100%" onclick="pfPhoneSend()"><i class="fas fa-paper-plane"></i> Enviar código por SMS</button></div>' +
+                '<div id="phS2" style="display:none"><h3 style="margin:.2rem 0 .6rem">Escribe el código</h3><p id="phSent" style="font-size:.85rem;color:#475569"></p>' +
+                '<input id="phCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="••••••" oninput="this.value=this.value.replace(/[^0-9]/g,String())">' +
+                '<button class="pf-btn" style="width:100%" onclick="pfPhoneVerify()">Confirmar y continuar</button>' +
+                '<button class="pf-btn alt" style="width:100%;margin-top:.5rem" onclick="pfPhoneResend()">Reenviar código</button>' +
+                '<p style="text-align:center;margin:.6rem 0 0"><a href="#" onclick="document.getElementById(\'phS1\').style.display=\'block\';document.getElementById(\'phS2\').style.display=\'none\';return false">Cambiar número</a></p></div>' +
+                '<p style="text-align:center;margin-top:.8rem"><a href="#" onclick="pfTab(\'in\');return false">← Otras formas de entrar</a></p>';
+            cash.parentNode.insertBefore(d, cash.nextSibling);
+        }
+        [['pfT_in', false], ['pfT_up', true]].forEach(a => {
+            const el = gid(a[0]); if (!el || el.querySelector('.stAlt')) return;
+            const g = Array.from(el.querySelectorAll('button')).filter(b => /google/i.test(b.textContent)).pop();
+            const html = '<button type="button" class="pf-btn alt stAlt" style="width:100%;margin-top:.6rem" onclick="' + (a[1] ? 'pfNeedTerms()&&' : '') + 'pfApple()"><i class="fab fa-apple"></i> ' + (a[1] ? 'Registrarme' : 'Continuar') + ' con Apple</button>' +
+                '<button type="button" class="pf-btn alt stAlt" style="width:100%;margin-top:.6rem" onclick="pfPhoneView()"><i class="fas fa-mobile-screen"></i> ' + (a[1] ? 'Registrarme' : 'Continuar') + ' con teléfono (SMS)</button>';
+            if (g) g.insertAdjacentHTML('afterend', html); else el.insertAdjacentHTML('beforeend', html);
+        });
+    }
+    const _tab = window.pfTab; window.pfTab = function () { const p = gid('pfT_ph'); if (p) p.style.display = 'none'; return _tab.apply(this, arguments); };
+    const _pv = window.pfView; window.pfView = function () { const r = _pv.apply(this, arguments); try { inject(); } catch (e) {} return r; };
+    inject();
+
+    /* ---------- Después de entrar: SIEMPRE la pantalla de planes (mismos precios de la página principal) ----------
+       Sin membresía ni prueba no se abre el sistema. Se vuelve a dibujar por si algo la pisa al terminar de cargar. */
+    const _pp = window.pfProceed;
+    window.pfProceed = async function (acc) {
+        const r = await _pp.apply(this, arguments);
+        [250, 1200].forEach(ms => setTimeout(() => {
+            try {
+                if (gid('pf_plans').style.display !== 'block') return;
+                const l = gid('pfPlanList'); if (l && !l.querySelector('.og-card')) pfRenderPlans();
+                if (!gid('pfTrialBox') && acc) pfPlansExtras(acc);
+            } catch (e) { console.warn(e); }
+        }, ms));
+        return r;
+    };
+})();
+</script>
+
+<script id="planGuard">
+/* Garantiza que la pantalla de pagos después de iniciar sesión use SIEMPRE los mismos 3 planes
+   (Estándar, Crecimiento, Premium) con el mismo formato de la página principal. */
+(function () {
+    const GOOD = (PLATFORM_CONFIG.plans || []).filter(p => p.tier === 'estandar' || p.tier === 'crecimiento' || p.tier === 'premium').map(p => Object.assign({}, p));
+    if (!GOOD.length) return;
+    function fixPlans() {
+        const ok = (PLATFORM_CONFIG.plans || []).some(p => p.tier === 'estandar') && PLATFORM_CONFIG.plans.every(p => ['estandar', 'crecimiento', 'premium'].includes(p.tier));
+        if (ok) return false;
+        PF_BASE_PLANS = GOOD.map(p => Object.assign({}, p));
+        try { pfApplyDiscount(); } catch (e) { PLATFORM_CONFIG.plans = GOOD.map(p => Object.assign({}, p)); }
+        return true;
+    }
+    window.pfFixPlans = fixPlans;
+    const l = gid('pfPlanList'); let busy = false;
+    if (l) new MutationObserver(() => {
+        if (busy || gid('pf_plans').style.display !== 'block') return;
+        if (!fixPlans() && l.querySelector('.og-card')) return;
+        busy = true; try { pfRenderPlans(); } catch (e) {} busy = false;
+    }).observe(l, { childList: true });
+    const _pp = window.pfProceed;
+    window.pfProceed = async function (acc) { fixPlans(); const r = await _pp.apply(this, arguments); fixPlans(); try { if (gid('pf_plans').style.display === 'block' && !gid('pfPlanList').querySelector('.og-card')) pfRenderPlans(); } catch (e) {} return r; };
+    const _pc = window.pfChoose; window.pfChoose = function (id) { fixPlans(); return _pc.apply(this, arguments); };
+})();
+</script>
+
+<script id="onlg-final-consistent-plans">
+(function () {
+    'use strict';
+    const tiers = [
+        { id: 'estandar', prefix: 'es', name: 'Estándar', base: 100 },
+        { id: 'crecimiento', prefix: 'cr', name: 'Crecimiento', base: 200 },
+        { id: 'premium', prefix: 'pr', name: 'Premium', base: 350 }
+    ];
+    const monthsList = [1, 3, 6, 12];
+    const discounts = { 1: 0, 3: 10, 6: 15, 12: 25 };
+    const rate = Number(PLATFORM_CONFIG.lpsRate) || 26.5;
+    const canonicalPlans = tiers.flatMap(function (tier) {
+        return monthsList.map(function (months) {
+            const lps = Math.round(tier.base * months * (100 - discounts[months]) / 100);
+            return {
+                id: tier.prefix + months,
+                name: tier.name + ' · ' + months + (months === 1 ? ' mes' : ' meses'),
+                months: months,
+                price: Math.round(lps / rate * 100) / 100,
+                lps: lps,
+                tier: tier.id,
+                popular: tier.id === 'crecimiento' && months === 1,
+                best: months === 12
+            };
+        });
+    });
+
+    function catalogIsCorrect() {
+        const plans = PLATFORM_CONFIG.plans || [];
+        if (plans.length !== 12) return false;
+        const tiersOk = plans.every(function (plan) {
+            return ['estandar', 'crecimiento', 'premium'].includes(plan.tier) &&
+                monthsList.includes(Number(plan.months));
+        });
+        const annual = { es12: 900, cr12: 1800, pr12: 3150 };
+        return tiersOk && Object.keys(annual).every(function (id) {
+            const plan = plans.find(function (item) { return item.id === id; });
+            return plan && Number(plan.lps) === annual[id];
+        });
+    }
+
+    function ensureCatalog() {
+        if (catalogIsCorrect()) return;
+        PLATFORM_CONFIG.plans = canonicalPlans.map(function (plan) { return Object.assign({}, plan); });
+        PF_BASE_PLANS = PLATFORM_CONFIG.plans.map(function (plan) { return Object.assign({}, plan); });
+    }
+
+    // The same renderer builds the public pricing area and the post-login plan picker.
+    const renderPlans = window.pfRenderPlans;
+    window.pfRenderPlans = function () {
+        ensureCatalog();
+        return renderPlans.apply(this, arguments);
+    };
+    window.pfLoadPlans = async function () {
+        PLATFORM_CONFIG.plans = canonicalPlans.map(function (plan) { return Object.assign({}, plan); });
+        PF_BASE_PLANS = PLATFORM_CONFIG.plans.map(function (plan) { return Object.assign({}, plan); });
+        window.pfRenderPlans();
+    };
+
+    function correctVisiblePlans() {
+        ensureCatalog();
+        const marketing = document.querySelector('#pfPlans .pf-grid');
+        if (marketing && marketing.querySelectorAll('.og-card').length !== 3) window.pfRenderPlans();
+        const account = gid('pfPlanList');
+        if (account && gid('pf_plans').style.display === 'block' &&
+            account.querySelectorAll('.og-card').length !== 3) window.pfRenderPlans();
+    }
+
+    // After any sign-in method, keep the same three-card picker and go to plans.
+    const proceed = window.pfProceed;
+    window.pfProceed = async function (account) {
+        ensureCatalog();
+        const result = await proceed.apply(this, arguments);
+        [100, 500, 1200].forEach(function (delay) {
+            setTimeout(function () {
+                try {
+                    if (gid('pf_plans').style.display === 'block') correctVisiblePlans();
+                } catch (e) {}
+            }, delay);
+        });
+        return result;
+    };
+
+    // Replace all payment methods in the membership picker with card checkout.
+    window.pfChoose = function (id) {
+        ensureCatalog();
+        const selected = PLATFORM_CONFIG.plans.find(function (plan) { return plan.id === id; });
+        if (!selected) return pfMsg('No se encontró el plan. Actualiza la página e inténtalo de nuevo.');
+        pfPlan = selected;
+        const box = gid('pfPay');
+        if (!box) return;
+        box.style.display = 'block';
+        box.innerHTML = '<div class="pf-sum"><div><small>Plan elegido</small><b>' +
+            escapeHtml(selected.name) + '</b></div><div style="text-align:right"><small>Total a pagar</small><b>' +
+            pfAmt(selected) + '</b><br><small>≈ $' + pfFmt(selected.price) + ' USD</small></div></div>' +
+            '<h4 class="pf-h">Pago con tarjeta</h4>' +
+            '<p style="color:#475569;font-size:.88rem;margin:.4rem 0 .8rem">Tarjeta de crédito o débito. ' +
+            'Los datos de la tarjeta se ingresan en el formulario seguro del procesador.</p>' +
+            '<div id="payArea"><button class="pf-btn pf-full" type="button" onclick="pfCardCheckout()">' +
+            '<i class="far fa-credit-card"></i> Continuar con tarjeta</button></div>' +
+            '<p class="pf-lock"><i class="fas fa-lock"></i> La membresía se activa cuando el procesador confirma el pago.</p>';
+        box.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+
+    window.pfCardCheckout = function () {
+        const config = PLATFORM_CONFIG;
+        if (!pfPlan) return pfMsg('Primero elige un plan.');
+        if (!config.paypalClientId) return pfMsg('El pago con tarjeta todavía no está configurado.');
+        if (!cloudOn()) return pfMsg('No se pudo conectar al sistema de pagos. Intenta de nuevo más tarde.');
+        function renderCardButtons() {
+            const area = gid('payArea');
+            if (!area) return;
+            area.innerHTML = '<div id="ppBox"></div>';
+            if (!window.paypal || !window.paypal.Buttons) return pfMsg('No se pudo cargar el pago con tarjeta.');
+            const buttons = window.paypal.Buttons({
+                fundingSource: window.paypal.FUNDING.CARD,
+                createOrder: function (data, actions) {
+                    return actions.order.create({
+                        purchase_units: [{
+                            description: 'Membresía ONLG ' + pfPlan.name,
+                            amount: { currency_code: config.currency, value: Number(pfPlan.price).toFixed(2) }
+                        }]
+                    });
+                },
+                onApprove: function (data, actions) {
+                    return actions.order.capture().then(async function () {
+                        try {
+                            const session = (await cloud().auth.getSession()).data.session;
+                            if (!session) return pfMsg('Tu sesión expiró. Inicia sesión otra vez.');
+                            const response = await fetch(FN_URL() + '/paypal-verify', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    apikey: config.supabaseAnonKey,
+                                    Authorization: 'Bearer ' + session.access_token
+                                },
+                                body: JSON.stringify({ orderID: data.orderID, planId: pfPlan.id })
+                            });
+                            const result = await response.json();
+                            if (!result.ok) return pfMsg('No se pudo confirmar el pago (' +
+                                (result.error || 'error') + '). Si te cobraron, contacta soporte con tu comprobante.');
+                            await pfPull();
+                            const owner = pfDB().accounts.find(function (item) { return item.id === session.user.id; });
+                            pfMsg('¡Pago confirmado! Entrando…', true);
+                            if (owner) pfEnter(owner, 'owner');
+                        } catch (e) {
+                            pfMsg('Error verificando el pago: ' + e.message);
+                        }
+                    });
+                },
+                onError: function () { pfMsg('No se pudo completar el pago con tarjeta. Inténtalo de nuevo.'); }
+            });
+            if (typeof buttons.isEligible === 'function' && !buttons.isEligible()) {
+                return pfMsg('El procesador no habilita pagos con tarjeta para esta cuenta o región.');
+            }
+            buttons.render('#ppBox').catch(function () {
+                pfMsg('No se pudo abrir el formulario de tarjeta.');
+            });
+        }
+        const sdk = 'https://www.paypal.com/sdk/js?client-id=' +
+            encodeURIComponent(config.paypalClientId) + '&currency=' +
+            encodeURIComponent(config.currency) + '&enable-funding=card';
+        if (window.paypal && window.paypal.Buttons) renderCardButtons();
+        else pfLoad(sdk, renderCardButtons);
+    };
+
+    // Preserve existing session data once, then keep all new changes persistent.
+    try {
+        const tenant = sessionStorage.getItem('activeTenant');
+        const keys = ['onlgPlatform', 'appData', tenant ? 'appData::' + tenant : 'appData'];
+        keys.forEach(function (key) {
+            const legacy = sessionStorage.getItem(key);
+            if (legacy && !localStorage.getItem(key)) localStorage.setItem(key, legacy);
+        });
+    } catch (e) {}
+    dataStore = function () { return localStorage; };
+
+    window.pfOwnerExit = async function () {
+        try { if (cloud()) await cloud().auth.signOut({ scope: 'local' }); } catch (e) {}
+        pfOwner.ok = false;
+        Object.keys(sessionStorage).filter(function (key) { return key.startsWith('sb-'); })
+            .forEach(function (key) { sessionStorage.removeItem(key); });
+        pfView('land');
+    };
+    window.pfSignOut = async function () {
+        try {
+            if (currentUser && sessionStorage.getItem('activeTenant')) {
+                localStorage.setItem(appStorageKey(), JSON.stringify(appData));
+            }
+        } catch (e) {}
+        try { if (cloud()) await cloud().auth.signOut({ scope: 'local' }); } catch (e) {}
+        pfOwner.ok = false;
+        ['empCode', 'activeTenant', 'tenantMode', 'currentUser', 'pfOAuth'].forEach(function (key) {
+            sessionStorage.removeItem(key);
+        });
+        Object.keys(sessionStorage).filter(function (key) { return key.startsWith('sb-'); })
+            .forEach(function (key) { sessionStorage.removeItem(key); });
+        location.reload();
+    };
+    const logout = window.logout;
+    window.logout = function () {
+        try {
+            if (currentUser && typeof appStorageKey === 'function') {
+                localStorage.setItem(appStorageKey(), JSON.stringify(appData));
+            }
+        } catch (e) {}
+        return logout.apply(this, arguments);
+    };
+
+    function labelSignOut() {
+        document.querySelectorAll('button[onclick*="pfOwnerExit"],button[onclick*="pfSignOut()"],button[onclick*="logout()"]').forEach(function (button) {
+            const icon = button.querySelector('i');
+            const usesOwnerExit = (button.getAttribute('onclick') || '').includes('pfOwnerExit');
+            button.textContent = '';
+            if (icon) button.appendChild(icon);
+            button.appendChild(document.createTextNode(' ' + (usesOwnerExit ? 'Finalizar sesión' : 'Finalizar sesión')));
+        });
+    }
+
+    // Keep the marketing page and member page visually synchronized on load.
+    window.addEventListener('DOMContentLoaded', function () {
+        ensureCatalog();
+        correctVisiblePlans();
+        labelSignOut();
+        setTimeout(correctVisiblePlans, 150);
+        setTimeout(labelSignOut, 300);
+    });
+    ensureCatalog();
+    window.pfRenderPlans();
+    labelSignOut();
+})();
+</script>
+
 </body>
 </html>
