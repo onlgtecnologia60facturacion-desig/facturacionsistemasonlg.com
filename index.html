@@ -2601,7 +2601,7 @@ body{font-family:'Manrope','Segoe UI',Tahoma,sans-serif;background:#f1f6fe}
 
                 <div class="card" id="usersCard">
                     <h2><i class="fas fa-user-shield"></i> Propiedad de la empresa · Usuarios del Sistema</h2>
-                    <div class="alert alert-info"><i class="fas fa-lock"></i> Solo el <strong>propietario</strong> puede ver, crear y eliminar usuarios. <strong>Cajero</strong>: ventas y caja · <strong>Cobrador</strong>: ventas, cobro de deudas y cuentas de crédito · <strong>Mantenimiento</strong>: inventario y proveedores · <strong>Gerente</strong>: todo menos Ajustes.</div>
+                    <div class="alert alert-info"><i class="fas fa-lock"></i> Solo el <strong>propietario</strong> puede ver, crear y eliminar usuarios. <strong>Cajero</strong>: ventas y caja · <strong>Gerente</strong>: todo menos Ajustes.</div>
                     <p style="font-size: 0.85rem; color: #6b7280; margin-top: -0.5rem;">
                         Crea un usuario por cada persona que use la caja. Los <strong>Empleados</strong> ven Dashboard, Nueva Venta, Caja, Historial y Clientes, y cada uno cuadra su propia caja. El <strong>Gerente</strong> ve todo menos Ajustes y revisa los cuadres de todos los cajeros. Solo el <strong>Administrador</strong> entra a Ajustes y administra usuarios.
                     </p>
@@ -2622,7 +2622,7 @@ body{font-family:'Manrope','Segoe UI',Tahoma,sans-serif;background:#f1f6fe}
                         </div>
                         <div class="form-group">
                             <label>Rol</label>
-                            <select id="newUserRole"><option value="cashier">Cajero</option><option value="collector">Cobrador</option><option value="maintenance">Mantenimiento</option><option value="manager">Gerente</option></select>
+                            <select id="newUserRole"><option value="cashier">Cajero</option><option value="manager">Gerente</option></select>
                         </div>
                     </div>
                     <div class="form-row">
@@ -2798,7 +2798,7 @@ body{font-family:'Manrope','Segoe UI',Tahoma,sans-serif;background:#f1f6fe}
                 <option value="cashier">Empleado</option>
 <option value="manager">Gerente</option>
                 <option value="admin">Administrador</option>
-            <option value="collector">Cobrador</option><option value="maintenance">Mantenimiento</option></select>
+            <option value="collector" hidden disabled>Cobrador</option><option value="maintenance" hidden disabled>Mantenimiento</option></select>
         </div>
         <div class="form-group"><label>Correo</label><input type="email" id="editUserEmail"></div>
         <div class="form-group"><label>Teléfono</label><input type="text" id="editUserPhone"></div>
@@ -5500,7 +5500,8 @@ function printCreditAccountStatement() {
                 <p style="color:#065f46;"><strong>Total Abonado:</strong> ${formatMoney(paidTotal)}</p>
                 <p style="font-size: 1.3rem; color: #b91c1c;"><strong>TOTAL PENDIENTE:</strong> ${formatMoney(pendingTotal)}</p>
             </div>
-        </body>
+        
+</body>
         </html>
     `;
 
@@ -10921,5 +10922,151 @@ pfProceed = async function (acc) {
 })();
 </script>
 
+<script id="onlgPatch12">
+/* ==================== AJUSTES v12 ====================
+   1) Prueba gratis: no se pueden crear usuarios. Con plan pagado: según el límite del plan.
+   2) Entrando con el código de la pulpería, el administrador también puede crear usuarios (según su plan).
+   3) "Entrar al sistema": usuario + correo + contraseña.
+   4) Barra azul y "Mejorar plan" arriba (ya no tapan el contenido). La barra también sale para el
+      administrador que entra con el código de la pulpería.
+   5) Sin roles Cobrador / Mantenimiento en las pulperías. */
+(function () {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const mode = () => sessionStorage.getItem('tenantMode') || '';
+  const esc = v => (typeof escapeHtml === 'function' ? escapeHtml(v) : String(v == null ? '' : v));
+
+  function tenantAcc() {
+    try { const id = sessionStorage.getItem('activeTenant'); return (pfDB().accounts || []).find(a => String(a.id) === String(id)) || null; } catch (e) { return null; }
+  }
+  function hasPaid(acc) {
+    try { return !!acc.tier || (pfDB().payments || []).some(p => String(p.accId) === String(acc.id) && p.status === 'approved'); } catch (e) { return false; }
+  }
+
+  /* ---------- Prueba gratis ---------- */
+  window.onlgIsTrial = function () {
+    const acc = tenantAcc(); if (!acc) return false;
+    if (mode() === 'cashier') return !!(appData && appData._meta && appData._meta.planIsTrial);   // el dueño guarda este dato
+    return !!acc.expiresAt && !hasPaid(acc);
+  };
+  // El dueño deja guardado si está en prueba, para que también se respete cuando entra con el código.
+  function syncTrialFlag() {
+    try {
+      if (mode() === 'cashier' || !currentUser || currentUser.role !== 'admin' || !tenantAcc()) return;
+      const t = window.onlgIsTrial();
+      appData._meta = appData._meta || {};
+      if (appData._meta.planIsTrial !== t) { appData._meta.planIsTrial = t; saveData(); }
+    } catch (e) {}
+  }
+
+  const _lim = window.pfUserLimitOk;
+  window.pfUserLimitOk = function () {
+    if (window.onlgIsTrial()) { alert('En la prueba gratuita no se pueden crear usuarios. Elige un plan de pago con el botón «Mejorar plan» para agregar empleados.'); return false; }
+    return typeof _lim === 'function' ? _lim.apply(this, arguments) : true;
+  };
+
+  // El administrador que entra con el código de la pulpería también es propietario de la cuenta
+  window.isOwner = function () { return !!currentUser && currentUser.role === 'admin'; };
+
+  const _addUser = window.addUser;
+  window.addUser = async function () {
+    const r = $('newUserRole');
+    if (r && (r.value === 'collector' || r.value === 'maintenance')) { alert('Ese rol ya no está disponible. Usa Cajero o Gerente.'); return; }
+    return _addUser.apply(this, arguments);
+  };
+
+  function usersCardTrial() {
+    const card = $('usersCard'); if (!card) return;
+    const trial = window.onlgIsTrial(), note = $('onlgTrialUsersNote');
+    const ctrls = card.querySelectorAll('input[id^="newUser"], select[id^="newUser"], button[onclick="addUser()"]');
+    ctrls.forEach(c => { c.disabled = trial; });
+    if (trial && !note) {
+      card.querySelector('h2').insertAdjacentHTML('afterend',
+        '<div id="onlgTrialUsersNote" class="alert alert-warning" style="display:flex;gap:.6rem;align-items:center;flex-wrap:wrap"><span><i class="fas fa-lock"></i> <b>Prueba gratuita:</b> no puedes crear usuarios. Elige un plan para agregar empleados.</span><button type="button" class="btn btn-small btn-primary" onclick="pfUpgradePlan()"><i class="fas fa-crown"></i> Mejorar plan</button></div>');
+    } else if (!trial && note) note.remove();
+  }
+  const _arp = window.applyRolePermissions;
+  window.applyRolePermissions = function () { const r = _arp.apply(this, arguments); try { usersCardTrial(); } catch (e) {} return r; };
+
+  /* ---------- Barra azul + Mejorar plan arriba ---------- */
+  const st = document.createElement('style');
+  st.textContent =
+    '#pfChip{position:static!important;display:flex;flex-wrap:wrap;align-items:center;gap:.15rem .25rem;margin:.6rem 1rem 0;padding:.45rem .8rem;max-width:none!important;width:auto;border-radius:10px;background:#1e40af;color:#fff;font-size:.78rem;line-height:1.35;opacity:1;box-shadow:0 2px 8px rgba(30,64,175,.25)}' +
+    '#pfChip a{color:#fff;text-decoration:underline}' +
+    '#onlgUpgradeBtn{position:static!important;right:auto!important;bottom:auto!important;white-space:nowrap;border-radius:999px;box-shadow:0 4px 12px rgba(30,64,175,.25)}';
+  document.head.appendChild(st);
+
+  function topBar() {
+    document.querySelectorAll('#pfChip').forEach(e => { if (e.dataset.onlgTop !== '1') e.remove(); });
+    const mine = $('pfChip'), btn = $('onlgUpgradeBtn');
+    const app = $('appContainer'), acc = tenantAcc();
+    const show = !!(acc && currentUser && currentUser.role === 'admin' && app && app.style.display !== 'none');
+    if (!show) { if (mine) mine.remove(); if (btn) btn.remove(); return; }
+    const cash = mode() === 'cashier';
+
+    // Barra azul (justo debajo del encabezado, dentro del contenido: no tapa nada)
+    const header = document.querySelector('main.main > .header');
+    let chip = mine;
+    if (!chip && header) { chip = document.createElement('div'); chip.id = 'pfChip'; chip.dataset.onlgTop = '1'; chip.dataset.v7 = '1'; chip.dataset.out = '1'; header.insertAdjacentElement('afterend', chip); }
+    if (chip) {
+      const code = cash ? (sessionStorage.getItem('empCode') || '') : (acc.code || '');
+      const lnk = (fn, label) => ' · <a href="#" onclick="' + fn + ';return false">' + label + '</a>';
+      const pct = (typeof pfPct === 'function' && PLATFORM_CONFIG) ? pfPct(PLATFORM_CONFIG.referralPct) : '';
+      const html = '<span>Pulpería: ' + esc(acc.business) + ' · Código de empleados: <b>' + (typeof pfFmtCode === 'function' ? pfFmtCode(code) : esc(code)) + '</b> · Vence: ' + (acc.expiresAt ? new Date(acc.expiresAt).toLocaleDateString() : '—') + '</span>' +
+        ((!cash && cloudOn()) ? lnk('pfRotateCode()', 'Cambiar código') + lnk('pfInviteModal()', 'Invitar y ganar ' + pct + '%') : '') +
+        (!cash ? lnk('pfCancel()', 'Cancelar membresía') : '') +
+        lnk('pfSignOut()', 'Salir del sistema');
+      if (chip.dataset.sig !== html) { chip.innerHTML = html; chip.dataset.sig = html; }
+    }
+
+    // Botón Mejorar plan en el encabezado (solo con la sesión del propietario)
+    const info = document.querySelector('main.main > .header .header-info');
+    if (!cash && info) {
+      let b = btn;
+      if (!b) {
+        b = document.createElement('button'); b.id = 'onlgUpgradeBtn'; b.type = 'button'; b.className = 'btn btn-primary btn-small';
+        b.innerHTML = '<i class="fas fa-crown"></i> Mejorar plan';
+        b.addEventListener('click', function () { if (typeof pfUpgradePlan === 'function') pfUpgradePlan(); });
+      }
+      if (b.parentNode !== info) info.insertBefore(b, info.firstChild);
+    } else if (btn) btn.remove();
+  }
+
+  function tick() { try { syncTrialFlag(); topBar(); usersCardTrial(); } catch (e) {} }
+  const _enter = window.enterApp;
+  window.enterApp = function () { const r = _enter.apply(this, arguments); setTimeout(tick, 50); return r; };
+  const _lo = window.logout;
+  window.logout = function () { const r = _lo.apply(this, arguments); setTimeout(tick, 50); return r; };
+  setInterval(tick, 1500);
+  window.addEventListener('DOMContentLoaded', () => setTimeout(tick, 300));
+
+  /* ---------- "Entrar al sistema": usuario + correo + contraseña ---------- */
+  function ensureUserField(on) {
+    const form = $('pfT_in'); if (!form) return;
+    let g = $('onlgInUserWrap');
+    if (on && !g) {
+      form.insertAdjacentHTML('afterbegin', '<div id="onlgInUserWrap"><label>Usuario</label><input type="text" id="inUser" autocomplete="username" placeholder="Tu usuario del sistema"></div>');
+    } else if (!on && g) g.remove();
+    const note = $('pfOwnerLoginNotice');
+    if (on && note) note.textContent = 'Ingresa tu usuario, tu correo y tu contraseña para entrar al sistema.';
+    if (on) { document.querySelectorAll('#pfT_in label').forEach(l => { if (l.textContent === 'Correo del propietario') l.textContent = 'Correo'; }); const m = $('inMail'); if (m) m.placeholder = 'Correo'; }
+  }
+  const _pv = window.pfView;
+  window.pfView = function () { const r = _pv.apply(this, arguments); setTimeout(() => ensureUserField(sessionStorage.getItem('pfOwnerLoginIntent') === '1' || !!$('pfOwnerLoginNotice')), 20); return r; };
+  const _go = window.pfGoSystem;
+  window.pfGoSystem = function () { const r = _go.apply(this, arguments); setTimeout(() => ensureUserField(true), 80); return r; };
+
+  const _login = window.pfLogin;
+  window.pfLogin = async function () {
+    if ($('onlgInUserWrap')) {
+      const u = ($('inUser').value || '').trim().toLowerCase();
+      if (!u) return pfMsg('Escribe tu usuario.');
+      const users = (appData && appData.users) || [];
+      if (!users.some(x => String(x.username || '').toLowerCase() === u && x.role === 'admin')) return pfMsg('Usuario, correo o contraseña incorrectos.');
+    }
+    return _login.apply(this, arguments);
+  };
+})();
+</script>
 </body>
 </html>
