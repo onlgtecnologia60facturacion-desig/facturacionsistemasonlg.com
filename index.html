@@ -9646,8 +9646,22 @@ async function pfSignOut() {
     location.reload();
 }
 async function pfDeleteMyAccount() {
+    const tenantId = sessionStorage.getItem('activeTenant');
+    if (!tenantId) return pfMsg('Esta opción solo está disponible para el propietario de una pulpería.');
+    const acc = (pfDB().accounts || []).find(a => String(a.id) === String(tenantId));
+    const name = (acc && (acc.business || acc.name)) || 'tu pulpería';
+    const ok = confirm('¿Estás completamente seguro? Se eliminará permanentemente la cuenta de ' + name + ', junto con sus datos de negocio y el acceso del propietario. Esta acción no se puede deshacer.');
+    if (!ok) return;
+    const typed = prompt('Para confirmar la eliminación definitiva, escribe ELIMINAR.');
+    if (typed !== 'ELIMINAR') return pfMsg('No se eliminó la cuenta.');
+    try {
+        if (cloudOn()) {
+            await sbReady();
+            const sb = cloud();
+         
 
-const ses = (await sb.auth.getSession()).data.session;
+
+            const ses = (await sb.auth.getSession()).data.session;
 const result = await sb.functions.invoke('delete-account', {
     headers: ses ? { Authorization: 'Bearer ' + ses.access_token } : {},
     body: { confirmation: 'ELIMINAR' }
@@ -9660,19 +9674,7 @@ if (result.error || detalle) throw new Error(detalle || (result.error && result.
 
 
 
-    
-    const acc = (pfDB().accounts || []).find(a => String(a.id) === String(tenantId));
-    const name = (acc && (acc.business || acc.name)) || 'tu pulpería';
-    const ok = confirm('¿Estás completamente seguro? Se eliminará permanentemente la cuenta de ' + name + ', junto con sus datos de negocio y el acceso del propietario. Esta acción no se puede deshacer.');
-    if (!ok) return;
-    const typed = prompt('Para confirmar la eliminación definitiva, escribe ELIMINAR.');
-    if (typed !== 'ELIMINAR') return pfMsg('No se eliminó la cuenta.');
-    try {
-        if (cloudOn()) {
-            await sbReady();
-            const sb = cloud();
-            const result = await sb.functions.invoke('delete-account', { body: { confirmation: 'ELIMINAR' } });
-            if (result.error || (result.data && result.data.error)) throw new Error((result.data && result.data.error) || (result.error && result.error.message) || 'No se pudo eliminar la cuenta.');
+
         } else {
             const db = pfDB();
             db.accounts = (db.accounts || []).filter(a => String(a.id) !== String(tenantId));
