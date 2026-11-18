@@ -7717,7 +7717,7 @@ const PLATFORM_CONFIG = {
   paypalClientId: 'AYKXA-wmZ-XGhiMoRimAMq-gDWP2DzTS_iQvgesEXVbncMELw91sAqrQ61kCFx2e8tT4zgup-tOrQC1g',// Cliente ID de PayPal (developer.paypal.com)
   googlePay: { environment:'TEST', merchantId:'', gateway:'', gatewayMerchantId:'' },
   currency: 'USD',
-  bankAccounts: [ {bank:'Banco Atlántida',holder:'Oscar Noel Lopez Garcia',account:'0000000000',type:'Ahorro'}, {bank:'BAC Honduras',holder:'Oscar Noel Lopez Garcia',account:'0000000000',type:'Ahorro'} ],  // pon aquí tus cuentas reales
+  bankAccounts: [],  // cuentas de banco quitadas por ahora; para volver a usarlas agrega {bank:'',holder:'',account:'',type:''}
   lpsRate: 26.5,   /* lempiras por 1 USD (solo para mostrar el aproximado) */
   turnstileSiteKey: '',   /* Cloudflare Turnstile (anti-bots). Vacio = sin captcha */
   plans: [
@@ -9903,10 +9903,8 @@ pfChoose = function (id) {
     box.innerHTML = '<div class="pf-sum"><div><small>Plan elegido</small><b>' + pfPlan.name + '</b></div><div style="text-align:right"><small>Total a pagar</small><b>' + pfAmt(pfPlan) + '</b><br><small>≈ $' + pfFmt(pfPlan.price) + ' USD</small></div></div>' +
         '<h4 class="pf-h">Elige tu método de pago</h4>' +
         '<div class="pf-methods" style="grid-template-columns:repeat(2,1fr)">' +
-        m('pfHnCards()', 'fas fa-credit-card', 'Tarjeta', 'Crédito o débito') +
         m('pfCashInfo()', 'fas fa-money-bill-wave', 'Efectivo', 'Te visitamos') +
         m('pfPaypal()', 'fab fa-paypal', 'PayPal', 'Tarjeta o saldo') +
-        m('pfGPay()', 'fab fa-google-pay', 'Google Pay', 'Pago rápido') +
         '</div><div id="payArea"></div><p class="pf-lock"><i class="fas fa-lock"></i> Tu membresía se activa al confirmar el pago.</p>';
     box.scrollIntoView({ behavior: 'smooth' });
 };
@@ -10605,7 +10603,7 @@ pfProceed = async function (acc) {
                 '<p style="text-align:center;margin-top:.8rem"><a href="#" onclick="pfTab(\'in\');return false">← Otras formas de entrar</a></p>';
             cash.parentNode.insertBefore(d, cash.nextSibling);
         }
-        [['pfT_in', false], ['pfT_up', true]].forEach(a => {
+        [/* botón de teléfono (SMS) oculto por ahora: para activarlo devuelve ['pfT_in', false], ['pfT_up', true] */].forEach(a => {
             const el = gid(a[0]); if (!el || el.querySelector('.stAlt')) return;
             const g = Array.from(el.querySelectorAll('button')).filter(b => /google/i.test(b.textContent)).pop();
             const html = '<button type="button" class="pf-btn alt stAlt" style="width:100%;margin-top:.6rem" onclick="pfPhoneView()"><i class="fas fa-mobile-screen"></i> ' + (a[1] ? 'Registrarme' : 'Continuar') + ' con teléfono (SMS)</button>';
