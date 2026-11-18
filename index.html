@@ -1535,7 +1535,7 @@ body{font-family:'Manrope','Segoe UI',Tahoma,sans-serif;background:#f1f6fe}
 
         <div class="sidebar-footer">
             <p style="margin: 0 0 0.5rem 0;">© 2026 EMPRESA DE TECNOLOGIA ONLG</p>
-            <button onclick="logout()"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</button>
+            <button onclick="logout()"><i class="fas fa-sign-out-alt"></i> Salir del sistema</button>
         </div>
     </aside>
 
@@ -1565,7 +1565,7 @@ body{font-family:'Manrope','Segoe UI',Tahoma,sans-serif;background:#f1f6fe}
                         <div id="headerUserRole" style="font-size:0.75rem; color:#6b7280;">—</div>
                         <div id="headerAccessStatus" style="font-size:0.7rem; color:#2563eb; font-weight:700;">—</div>
                     </div>
-                    <button class="btn btn-small btn-secondary" onclick="logout()" title="Cerrar sesión">
+                    <button class="btn btn-small btn-secondary" onclick="logout()" title="Salir del sistema">
                         <i class="fas fa-sign-out-alt"></i>
                     </button>
                 </div>
@@ -6880,7 +6880,7 @@ const I18N = {
  'Caja y Cuadre':['Cash Register','Caixa e Fechamento','Caisse et clôture'],'Historial':['History','Histórico','Historique'],'Clientes':['Customers','Clientes','Clients'],
  'Proveedores':['Suppliers','Fornecedores','Fournisseurs'],'Deudas':['Debts','Dívidas','Dettes'],'Cuentas de Crédito':['Credit Accounts','Contas de Crédito','Comptes de crédit'],
  'Promos y Campañas':['Promos & Campaigns','Promoções e Campanhas','Promos et campagnes'],'Reportes':['Reports','Relatórios','Rapports'],'Ajustes':['Settings','Configurações','Paramètres'],
- 'Cerrar Sesión':['Log out','Sair','Se déconnecter'],'Inicia sesión para continuar':['Sign in to continue','Entre para continuar','Connectez-vous pour continuer'],
+ 'Salir del sistema':['Exit the system','Sair do sistema','Quitter le système'],'Inicia sesión para continuar':['Sign in to continue','Entre para continuar','Connectez-vous pour continuer'],
  'Usuario':['User','Usuário','Utilisateur'],'Contraseña':['Password','Senha','Mot de passe'],'Ingresar':['Sign in','Entrar','Se connecter'],
  'Administrador':['Administrator','Administrador','Administrateur'],'Gerente':['Manager','Gerente','Gérant'],'Cajero':['Cashier','Caixa','Caissier'],'Empleado':['Employee','Funcionário','Employé'],'Rol':['Role','Função','Rôle'],
  'Nombre':['Name','Nome','Nom'],'Correo':['Email','E-mail','E-mail'],'Teléfono':['Phone','Telefone','Téléphone'],'Caja':['Register','Caixa','Caisse'],'Acciones':['Actions','Ações','Actions'],
@@ -9683,7 +9683,7 @@ async function pfOutRefresh() {
     if (!on && cloudOn()) { try { await sbReady(); on = !!(await cloud().auth.getSession()).data.session; } catch (e) {} }
     let wrap = gid('pfOutMenu');
     if (!wrap) {
-        nav.insertAdjacentHTML('beforeend', ' <div id="pfOutMenu" class="pf-out-menu" style="display:inline-block;position:relative;margin-left:.35rem"><button id="pfOut" type="button" class="pf-btn alt" aria-label="Opciones de cuenta" title="Opciones de cuenta">⋮</button><div class="pf-out-pop" style="display:none;position:absolute;right:0;top:100%;min-width:190px;background:#fff;padding:.45rem;border:1px solid #cbd5e1;border-radius:9px;box-shadow:0 8px 24px #0002;z-index:20"><button type="button" class="pf-btn alt" style="width:100%;margin:.15rem 0" onclick="pfDeleteMyAccount()" title="Elimina definitivamente la cuenta y los datos de esta pulpería">Cancelar sesión</button></div><span class="pf-out-tip" style="display:none;position:absolute;right:0;top:calc(100% + 44px);background:#111827;color:#fff;padding:.45rem .6rem;border-radius:6px;font-size:11px;width:230px;z-index:21">Esta opción elimina permanentemente tu cuenta y los datos de la pulpería.</span></div>');
+        nav.insertAdjacentHTML('beforeend', ' <div id="pfOutMenu" class="pf-out-menu" style="display:inline-block;position:relative;margin-left:.35rem"><button id="pfOut" type="button" class="pf-btn alt" aria-label="Opciones de cuenta" title="Opciones de cuenta">⋮</button><div class="pf-out-pop" style="display:none;position:absolute;right:0;top:100%;min-width:190px;background:#fff;padding:.45rem;border:1px solid #cbd5e1;border-radius:9px;box-shadow:0 8px 24px #0002;z-index:20"><button type="button" class="pf-btn alt" style="width:100%;margin:.15rem 0" onclick="pfDeleteMyAccount()" title="Elimina definitivamente la cuenta y los datos de esta pulpería">Eliminar cuenta</button></div><span class="pf-out-tip" style="display:none;position:absolute;right:0;top:calc(100% + 44px);background:#111827;color:#fff;padding:.45rem .6rem;border-radius:6px;font-size:11px;width:230px;z-index:21">Esta opción elimina permanentemente tu cuenta y los datos de la pulpería.</span></div>');
         wrap = gid('pfOutMenu');
         const trigger = gid('pfOut'), pop = wrap.querySelector('.pf-out-pop'), tip = wrap.querySelector('.pf-out-tip');
         trigger.addEventListener('mouseenter', () => { tip.style.display = 'block'; });
@@ -9720,7 +9720,7 @@ pfDress = function () {
     _pfDress10();
     pfLandExtras(); pfOutRefresh();
     document.querySelectorAll('.page-title').forEach(t => { if (!t.querySelector('.pt-logo')) t.insertAdjacentHTML('afterbegin', '<img class="pt-logo" src="' + LOGO10 + '" alt="ONLG">'); });
-    const c = gid('pfChip'); if (c && !c.dataset.out) { c.dataset.out = '1'; c.insertAdjacentHTML('beforeend', ' · <a href="#" style="color:#fff;text-decoration:underline" onclick="pfSignOut();return false">Cerrar sesión</a>'); }
+    const c = gid('pfChip'); if (c && !c.dataset.out) { c.dataset.out = '1'; c.insertAdjacentHTML('beforeend', ' · <a href="#" style="color:#fff;text-decoration:underline" onclick="pfSignOut();return false">Salir del sistema</a>'); }
     try { invPreview(); } catch (e) {}
 };
 [800, 2000, 4000].forEach(ms => setTimeout(() => { try { pfDress(); } catch (e) {} }, ms));
@@ -9875,7 +9875,7 @@ pfAfterBoot = async function () {
     if (sessionStorage.getItem('activeTenant')) {
         const nav = document.querySelector('.pf-nav > div:last-child');
         if (nav && !gid('pfEnterBtn')) {
-            nav.insertAdjacentHTML('afterbegin', '<button id="pfEnterBtn" class="pf-btn" onclick="pfGoSystem()"><i class="fas fa-right-to-bracket"></i> Entrar a mi sistema</button> ');
+            nav.insertAdjacentHTML('afterbegin', '<button id="pfEnterBtn" class="pf-btn" onclick="pfGoSystem()"><i class="fas fa-right-to-bracket"></i> Entrar al sistema</button> ');
         }
     }
 };
@@ -10712,6 +10712,212 @@ pfProceed = async function (acc) {
   } else {
     setTimeout(build, 150);
   }
+})();
+</script>
+
+<script id="onlgOwnerMembershipAccess">
+(function () {
+    const LOGIN_INTENT = 'pfOwnerLoginIntent';
+    const byId = id => document.getElementById(id);
+    let escapeHandler = null;
+
+    function currentAccount() {
+        const tenantId = sessionStorage.getItem('activeTenant');
+        if (!tenantId || typeof pfDB !== 'function') return null;
+        return (pfDB().accounts || []).find(a => String(a.id) === String(tenantId)) || null;
+    }
+
+    function isStoreOwner() {
+        return !!(sessionStorage.getItem('activeTenant') &&
+            sessionStorage.getItem('tenantMode') !== 'cashier' &&
+            typeof isOwner === 'function' && isOwner());
+    }
+
+    function closeMembershipPanel() {
+        const panel = byId('onlgStoreMembership');
+        if (panel) panel.remove();
+        if (escapeHandler) {
+            document.removeEventListener('keydown', escapeHandler);
+            escapeHandler = null;
+        }
+    }
+
+    function openMembershipPanel() {
+        if (!isStoreOwner()) {
+            if (typeof pfMsg === 'function') pfMsg('Esta información solo está disponible para el propietario de la pulpería.');
+            return;
+        }
+        const acc = currentAccount();
+        if (!acc) {
+            if (typeof pfMsg === 'function') pfMsg('No se pudieron cargar los datos de tu pulpería. Inicia sesión nuevamente.');
+            return;
+        }
+        closeMembershipPanel();
+        const active = typeof pfActive === 'function' && pfActive(acc);
+        const expiry = acc.expiresAt ? new Date(acc.expiresAt).toLocaleDateString('es-HN') : 'Sin fecha de vencimiento';
+        const status = active ? 'Acceso vigente' : 'Sin membresía activa';
+        const code = typeof pfFmtCode === 'function' ? pfFmtCode(acc.code || '') : (acc.code || 'No disponible');
+        const panel = document.createElement('div');
+        panel.id = 'onlgStoreMembership';
+        panel.setAttribute('role', 'dialog');
+        panel.setAttribute('aria-modal', 'true');
+        panel.setAttribute('aria-labelledby', 'onlgStoreMembershipTitle');
+        panel.style.cssText = 'position:fixed;inset:0;z-index:30020;background:rgba(15,23,42,.62);display:flex;align-items:center;justify-content:center;padding:1rem';
+        panel.innerHTML =
+            '<div style="background:#fff;color:#0f172a;width:min(100%,560px);max-height:90vh;overflow:auto;border-radius:18px;padding:1.35rem;box-shadow:0 24px 70px #0005">' +
+            '<div style="display:flex;justify-content:space-between;align-items:center;gap:1rem"><h2 id="onlgStoreMembershipTitle" style="margin:0">Mi pulpería</h2>' +
+            '<button type="button" class="pf-btn alt" onclick="pfCloseStoreMembership()" aria-label="Cerrar">Cerrar</button></div>' +
+            '<p style="color:#64748b;margin:.45rem 0 1rem">Información de la cuenta del propietario.</p>' +
+            '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:.7rem">' +
+            '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:.85rem"><small style="color:#64748b">Pulpería</small><div style="font-weight:700;margin-top:.25rem">' + escapeHtml(acc.business || 'Mi pulpería') + '</div></div>' +
+            '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:.85rem"><small style="color:#64748b">Propietario</small><div style="font-weight:700;margin-top:.25rem">' + escapeHtml(acc.name || 'Propietario') + '</div></div>' +
+            '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:.85rem"><small style="color:#64748b">Correo del propietario</small><div style="font-weight:700;margin-top:.25rem;overflow-wrap:anywhere">' + escapeHtml(acc.email || 'No disponible') + '</div></div>' +
+            '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:.85rem"><small style="color:#64748b">Membresía</small><div style="font-weight:700;margin-top:.25rem;color:' + (active ? '#15803d' : '#b91c1c') + '">' + status + '</div><div style="font-size:.85rem;margin-top:.2rem">Vence: ' + escapeHtml(expiry) + '</div></div>' +
+            '<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:.85rem;grid-column:1/-1"><small style="color:#1d4ed8">Código de la pulpería para empleados</small><div style="font-size:1.25rem;font-weight:800;letter-spacing:.06em;margin-top:.25rem">' + escapeHtml(code) + '</div></div>' +
+            '</div><div style="display:flex;flex-wrap:wrap;gap:.55rem;margin-top:1rem">' +
+            (active ? '<button type="button" class="pf-btn alt" onclick="pfCloseStoreMembership();pfCancel()">Cancelar membresía</button>' : '') +
+            (cloudOn() ? '<button type="button" class="pf-btn alt" onclick="pfRotateCode()">Cambiar código de pulpería</button>' : '') +
+            '<button type="button" class="pf-btn" onclick="pfSignOut()">Salir del sistema</button></div>' +
+            '<p style="font-size:.8rem;color:#64748b;margin:.9rem 0 0">Cancelar la membresía no elimina la cuenta ni tus datos. “Salir del sistema” solo cierra tu sesión.</p></div>';
+        panel.addEventListener('click', event => { if (event.target === panel) closeMembershipPanel(); });
+        escapeHandler = function onEscape(event) {
+            if (event.key === 'Escape') {
+                closeMembershipPanel();
+            }
+        };
+        document.addEventListener('keydown', escapeHandler);
+        document.body.appendChild(panel);
+    }
+
+    function refreshCompanyMenu() {
+        const menu = byId('pfCompanyMenu');
+        if (!menu) return;
+        let item = byId('pfOwnerMembershipMenuItem');
+        if (!item) {
+            item = document.createElement('button');
+            item.type = 'button';
+            item.id = 'pfOwnerMembershipMenuItem';
+            item.textContent = 'Mi pulpería y membresía';
+            item.addEventListener('click', function (event) {
+                event.preventDefault();
+                event.stopPropagation();
+                if (typeof pfCloseMenus === 'function') pfCloseMenus();
+                openMembershipPanel();
+            });
+            menu.insertBefore(item, menu.firstChild);
+        }
+        item.style.display = isStoreOwner() ? 'block' : 'none';
+        const enter = byId('pfEnterBtn');
+        if (enter) enter.innerHTML = '<i class="fas fa-right-to-bracket"></i> Entrar al sistema';
+    }
+
+    function setOwnerLoginMode(enabled) {
+        const auth = document.querySelector('#pf_auth .pf-box');
+        if (!auth) return;
+        const tabs = auth.querySelector('.pf-tabs');
+        const emailLabel = document.querySelector('#pfT_in label');
+        const loginButton = document.querySelector('#pfT_in button[onclick="pfLogin()"]');
+        const googleButton = document.querySelector('#pfT_in button[onclick="pfGoogle()"]');
+        let note = byId('pfOwnerLoginNotice');
+        if (enabled) {
+            if (tabs) tabs.style.display = 'none';
+            if (emailLabel) emailLabel.textContent = 'Correo del propietario';
+            if (loginButton) loginButton.textContent = 'Entrar al sistema';
+            if (googleButton) googleButton.style.display = 'none';
+            if (!note) {
+                note = document.createElement('p');
+                note.id = 'pfOwnerLoginNotice';
+                note.style.cssText = 'margin:.4rem 0 1rem;color:#475569;font-size:.9rem';
+                note.textContent = 'Ingresa el correo y la contraseña del propietario de esta pulpería.';
+                const form = byId('pfT_in');
+                if (form) form.insertBefore(note, form.firstChild);
+            }
+            const email = byId('inMail');
+            if (email) { email.autocomplete = 'username'; email.placeholder = 'Correo del propietario'; }
+            const password = byId('inPass');
+            if (password) password.autocomplete = 'current-password';
+        } else {
+            if (tabs) tabs.style.display = '';
+            if (emailLabel) emailLabel.textContent = 'Correo';
+            if (loginButton) loginButton.textContent = 'Entrar';
+            if (googleButton) googleButton.style.display = '';
+            if (note) note.remove();
+            const email = byId('inMail');
+            if (email) email.placeholder = '';
+        }
+    }
+
+    window.pfShowStoreMembership = openMembershipPanel;
+    window.pfCloseStoreMembership = closeMembershipPanel;
+    window.pfGoSystem = function () {
+        if (!sessionStorage.getItem('activeTenant') || sessionStorage.getItem('tenantMode') === 'cashier') {
+            if (typeof pfMsg === 'function') pfMsg('Esta entrada está disponible para el propietario de la pulpería.');
+            return;
+        }
+        sessionStorage.setItem(LOGIN_INTENT, '1');
+        pfView('auth');
+        pfTab('in');
+        setOwnerLoginMode(true);
+        setTimeout(() => { if (byId('inMail')) byId('inMail').focus(); }, 50);
+    };
+
+    const previousView = window.pfView;
+    window.pfView = function () {
+        const result = previousView.apply(this, arguments);
+        setTimeout(function () {
+            setOwnerLoginMode(sessionStorage.getItem(LOGIN_INTENT) === '1');
+            refreshCompanyMenu();
+        }, 0);
+        return result;
+    };
+
+    const previousLogin = window.pfLogin;
+    window.pfLogin = async function () {
+        if (sessionStorage.getItem(LOGIN_INTENT) === '1') {
+            const tenantId = sessionStorage.getItem('activeTenant');
+            if (!tenantId || sessionStorage.getItem('tenantMode') === 'cashier') {
+                return pfMsg('La entrada de propietario ya no está activa. Vuelve a la página principal.');
+            }
+            let acc = currentAccount();
+            if (!acc && cloudOn()) {
+                try { await sbReady(); await pfPull(); acc = currentAccount(); } catch (e) {}
+            }
+            const mail = (byId('inMail') && byId('inMail').value || '').trim().toLowerCase();
+            if (!acc || !acc.email) return pfMsg('No se encontró el correo del propietario de esta pulpería.');
+            if (mail !== String(acc.email).trim().toLowerCase()) return pfMsg('Usa el correo del propietario registrado para esta pulpería.');
+            const result = await previousLogin.apply(this, arguments);
+            if (result === true) {
+                sessionStorage.removeItem(LOGIN_INTENT);
+                setOwnerLoginMode(false);
+            }
+            return result;
+        }
+        return previousLogin.apply(this, arguments);
+    };
+
+    const previousEnter = window.pfEnter;
+    window.pfEnter = async function () {
+        sessionStorage.removeItem(LOGIN_INTENT);
+        return previousEnter.apply(this, arguments);
+    };
+
+    const previousAfterBoot = window.pfAfterBoot;
+    window.pfAfterBoot = async function () {
+        const result = await previousAfterBoot.apply(this, arguments);
+        refreshCompanyMenu();
+        if (sessionStorage.getItem(LOGIN_INTENT) === '1') {
+            pfView('auth');
+            pfTab('in');
+            setOwnerLoginMode(true);
+        }
+        return result;
+    };
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', refreshCompanyMenu);
+    } else {
+        refreshCompanyMenu();
+    }
 })();
 </script>
 
