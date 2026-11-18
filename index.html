@@ -9646,8 +9646,16 @@ async function pfSignOut() {
     location.reload();
 }
 async function pfDeleteMyAccount() {
-    const tenantId = sessionStorage.getItem('activeTenant');
-    if (!tenantId) return pfMsg('Esta opción solo está disponible para el propietario de una pulpería.');
+   const ses = (await sb.auth.getSession()).data.session;
+const result = await sb.functions.invoke('delete-account', {
+    headers: ses ? { Authorization: 'Bearer ' + ses.access_token } : {},
+    body: { confirmation: 'ELIMINAR' }
+});
+let detalle = (result.data && result.data.error) || '';
+if (!detalle && result.error && result.error.context && result.error.context.json) {
+    try { const j = await result.error.context.json(); detalle = j.error || j.message || JSON.stringify(j); } catch (_) {}
+}
+if (result.error || detalle) throw new Error(detalle || (result.error && result.error.message) || 'No se pudo eliminar la cuenta.');
     const acc = (pfDB().accounts || []).find(a => String(a.id) === String(tenantId));
     const name = (acc && (acc.business || acc.name)) || 'tu pulpería';
     const ok = confirm('¿Estás completamente seguro? Se eliminará permanentemente la cuenta de ' + name + ', junto con sus datos de negocio y el acceso del propietario. Esta acción no se puede deshacer.');
