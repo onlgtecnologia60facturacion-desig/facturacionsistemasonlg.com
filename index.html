@@ -7712,7 +7712,7 @@ function generateInvoiceBodyHTML(sale, customer) {
 // Modo LOCAL (por defecto): cuentas y datos en este navegador. Para Supabase llena supabaseUrl y supabaseAnonKey.
 const PLATFORM_CONFIG = {
   supabaseUrl: 'https://dixaoqpgcybotjlbvspa.supabase.co',        /* ← PEGA AQUÍ tu Project URL: https://xxxx.supabase.co */
-  supabaseAnonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRpeGFvcXBnY3lib3RqbGJ2c3BhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ2OTY5NjksImV4cCI6MjExMDI3Mjk2OX0.N-jJ-ZGxYN2nGY-heGtzoipabD9p4_bV8cTkz52RdcA',    /* ← PEGA AQUÍ tu anon public key. Vacío = modo local */
+  supabaseAnonKey: 'sb_publishable_ekmIfzoWnL-pUq-m1MP2NQ_-33RkU8X',    /* ← PEGA AQUÍ tu anon public key. Vacío = modo local */
   googleClientId: '',                             // ID de cliente de Google (Google Cloud → Credenciales)
   paypalClientId: 'AYKXA-wmZ-XGhiMoRimAMq-gDWP2DzTS_iQvgesEXVbncMELw91sAqrQ61kCFx2e8tT4zgup-tOrQC1g',// Cliente ID de PayPal (developer.paypal.com)
   googlePay: { environment:'TEST', merchantId:'', gateway:'', gatewayMerchantId:'' },
@@ -9658,23 +9658,8 @@ async function pfDeleteMyAccount() {
         if (cloudOn()) {
             await sbReady();
             const sb = cloud();
-         
-
-
-            const ses = (await sb.auth.getSession()).data.session;
-const result = await sb.functions.invoke('delete-account', {
-    headers: ses ? { Authorization: 'Bearer ' + ses.access_token } : {},
-    body: { confirmation: 'ELIMINAR' }
-});
-let detalle = (result.data && result.data.error) || '';
-if (!detalle && result.error && result.error.context && result.error.context.json) {
-    try { const j = await result.error.context.json(); detalle = j.error || j.message || JSON.stringify(j); } catch (_) {}
-}
-if (result.error || detalle) throw new Error(detalle || (result.error && result.error.message) || 'No se pudo eliminar la cuenta.');
-
-
-
-
+            const result = await sb.functions.invoke('delete-account', { body: { confirmation: 'ELIMINAR' } });
+            if (result.error || (result.data && result.data.error)) throw new Error((result.data && result.data.error) || (result.error && result.error.message) || 'No se pudo eliminar la cuenta.');
         } else {
             const db = pfDB();
             db.accounts = (db.accounts || []).filter(a => String(a.id) !== String(tenantId));
