@@ -11066,5 +11066,187 @@ pfProceed = async function (acc) {
   };
 })();
 </script>
+
+
+    <script id="onlgPatch13">
+/* ==================== AJUSTES v13 ====================
+   1) No se aprueba ni se cobra un pago mientras la membresía siga vigente.
+   2) El estado de cuenta muestra fecha y hora de compra, vigencia y un botón Eliminar.
+   3) Las visitas tienen botón Eliminar. Todo borrado pide el código del administrador.
+   4) Al eliminar una visita, el cliente puede enviar otra solicitud. */
+(function () {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const esc = v => escapeHtml(String(v == null ? '' : v));
+  const fmtD = d => d ? new Date(d).toLocaleDateString('es-HN') : '—';
+  const fmtDT = d => d ? new Date(d).toLocaleString('es-HN', { dateStyle: 'short', timeStyle: 'short' }) : '—';
+
+  // true = una cuenta en prueba gratis (sin pagos aprobados) SÍ puede comprar su primer plan.
+  // Pon false si quieres bloquear también ese caso.
+  PLATFORM_CONFIG.allowTrialUpgrade = true;
+
+  /* ---------- 1) Bloqueo: solo se puede pagar si la membresía está vencida ---------- */
+  function hasPaid(db, a) { return (db.payments || []).some(p => String(p.accId) === String(a.id) && p.status === 'approved'); }
+  function buyBlock(a, db) {
+    db = db || pfDB();
+    if (!a || !a.expiresAt) return '';
+    if (new Date(a.expiresAt) <= new Date()) return '';                       // vencida: puede pagar
+    if (PLATFORM_CONFIG.allowTrialUpgrade !== false && !hasPaid(db, a)) return ''; // prueba gratis
+    return 'Esta cuenta todavía tiene membresía vigente hasta el ' + fmtD(a.expiresAt) + '. Solo se puede registrar o aprobar un pago cuando la membresía esté vencida.';
+  }
+  window.pfBuyBlock = buyBlock;
+
+  // Punto central de aprobación (banco, efectivo, PayPal local)
+  const _ap = window.pfApprove;
+  window.pfApprove = function (db, p, auto) {
+    const a = db.accounts.find(x => x.id === p.accId), m = buyBlock(a, db);
+    if (m) { window.pfApprove.blocked = m; return false; }
+    window.pfApprove.blocked = '';
+    _ap.apply(this, arguments);
+    return true;
+  };
+  window.pfPay2 = function (id, ok) {
+    const db = pfDB(), p = db.payments.find(x => x.id === id); if (!p) return;
+    if (ok) { if (pfApprove(db, p, false) === false) return pfMsg(pfApprove.blocked); }
+    else p.status = 'rejected';
+    pfSave(db); pfOwnerPanel();
+  };
+  const _cs = window.pfCashSave;
+  window.pfCashSave = function () {
+    const db = pfDB(), a = db.accounts.find(x => x.id === (($('cAcc') || {}).value));
+    const m = buyBlock(a, db); if (m) return pfMsg(m);
+    return _cs.apply(this, arguments);
+  };
+  const _vu = window.pfVisitUse;
+  window.pfVisitUse = function (id) {
+    const db = pfDB(), v = (db.visits || []).find(x => x.id === id), a = v && db.accounts.find(x => x.id === v.accId);
+    const m = buyBlock(a, db); if (m) return pfMsg(m);
+    return _vu.apply(this, arguments);
+  };
+  const _cp = window.pfCashPreview;
+  window.pfCashPreview = function () {
+    _cp.apply(this, arguments);
+    const db = pfDB(), a = db.accounts.find(x => x.id === (($('cAcc') || {}).value)), m = buyBlock(a, db), pv = $('cPrev');
+    if (pv && m) pv.insertAdjacentHTML('beforeend', '<div style="color:#b91c1c;font-weight:700;display:block">' + esc(m) + '</div>');
+  };
+
+  // Del lado del cliente: no deja elegir plan ni pagar por PayPal / banco / Google Pay mientras esté vigente
+  function curBlock() { const db = pfDB(); return buyBlock(db.accounts.find(x => pfAcc && x.id === pfAcc.id), db); }
+  ['pfChoose', 'pfPaypal', 'pfPaid', 'pfSendReceipt', 'pfGPay'].forEach(n => {
+    const o = window[n]; if (typeof o !== 'function') return;
+    window[n] = function () { const m = curBlock(); if (m) { pfMsg(m); alert(m); return; } return o.apply(this, arguments); };
+  });
+
+  // Del lado del personal (cobrador): consulta la fecha real en el servidor antes de cobrar
+  if (typeof window.stCash === 'function') {
+    const _sc = window.stCash;
+    window.stCash = async function () {
+      try {
+        const sel = $('stAcc');
+        if (sel && sel.value && cloudOn()) {
+          const r = await cloud().rpc('staff_accounts');
+          const row = ((r.data && r.data.accounts) || []).find(x => x.id === sel.value);
+          if (row && row.expires_at && new Date(row.expires_at) > new Date())
+            return pfMsg('Esta cuenta todavía tiene membresía vigente hasta el ' + fmtD(row.expires_at) + '. Solo se puede cobrar cuando esté vencida.');
+        }
+      } catch (e) { /* si falla la consulta, sigue el flujo normal */ }
+      return _sc.apply(this, arguments);
+    };
+  }
+
+  /* ---------- Código del administrador (el de 20 caracteres del propietario) ---------- */
+  function askCode(title) {
+    return new Promise(res => {
+      const o = document.createElement('div');
+      o.style.cssText = 'position:fixed;inset:0;z-index:30100;background:#000a;display:flex;align-items:center;justify-content:center;padding:1rem';
+      o.innerHTML = '<div class="pf-box" style="margin:0;width:100%;max-width:380px"><h3>' + esc(title) + '</h3><p style="font-size:.85rem;color:#64748b">Solo el administrador puede hacerlo. Escribe tu código de seguridad.</p><input type="password" id="ac13" autocomplete="off" maxlength="40" placeholder="Código del administrador"><div style="display:flex;gap:.5rem"><button type="button" class="pf-btn" id="ac13ok" style="flex:1">Confirmar</button><button type="button" class="pf-btn alt" id="ac13no" style="flex:1">Cancelar</button></div></div>';
+      document.body.appendChild(o);
+      const done = v => { o.remove(); res(v); };
+      $('ac13ok').onclick = () => done($('ac13').value);
+      $('ac13no').onclick = () => done(null);
+      $('ac13').addEventListener('keydown', e => { if (e.key === 'Enter') done($('ac13').value); });
+      setTimeout(() => $('ac13').focus(), 30);
+    });
+  }
+  async function adminCode(title) {
+    if ((+sessionStorage.getItem('adm13Lock') || 0) > Date.now()) { pfMsg('Demasiados intentos. Espera unos minutos.'); return false; }
+    const key = localStorage.getItem('onlgOwnerKeyV1');
+    if (!key) { alert('Este navegador no tiene el código del administrador. Inicia sesión como propietario para generarlo.'); return false; }
+    const v = await askCode(title || 'Código del administrador');
+    if (v === null) return false;
+    if (v !== key) {
+      const n = (+sessionStorage.getItem('adm13N') || 0) + 1; sessionStorage.setItem('adm13N', n);
+      if (n >= 5) { sessionStorage.setItem('adm13Lock', Date.now() + 300000); sessionStorage.setItem('adm13N', 0); }
+      alert('Código del administrador incorrecto.'); return false;
+    }
+    sessionStorage.setItem('adm13N', 0); return true;
+  }
+
+  /* ---------- 2) Estado de cuenta con fecha de compra y botón Eliminar ---------- */
+  window.pfCashStatement = function (id) {
+    const db = pfDB(), a = db.accounts.find(x => x.id === id); if (!a) return pfMsg('No se encontró la cuenta.');
+    const L = db.payments.filter(p => p.accId === id).slice().sort((x, y) => new Date(x.at) - new Date(y.at));
+    const ok = L.filter(p => p.status === 'approved'), total = ok.reduce((n, p) => n + pfPaymentLps(p), 0), last = ok[ok.length - 1];
+    const rows = L.map(p => {
+      const lbl = p.monthsLabels || [];
+      return '<tr><td>' + fmtDT(p.at) + '</td><td>' + esc(p.receiptNo || '—') + '</td><td>' + esc(p.method || '') + '</td><td>' + Number(p.months || 0) + (lbl.length ? '<br><small>' + esc(lbl.join(', ')) + '</small>' : '') + '</td><td>' + (p.until ? fmtD(p.until) : '—') + '</td><td>' + pfAmtPay(p) + '</td><td>' + esc(p.status || '') + '</td><td class="np"><button onclick="parent.pfPaymentDelete(\'' + esc(p.id) + '\')" style="background:#dc2626;color:#fff;border:0;border-radius:6px;padding:.35rem .7rem;cursor:pointer">Eliminar</button></td></tr>';
+    }).join('');
+    const logo = pfSet().logo ? '<img src="' + pfSet().logo + '">' : '';
+    const html = '<!doctype html><html><head><meta charset="utf-8"><title>Estado de cuenta</title><style>body{font:14px Arial;padding:20px;color:#172033}header{text-align:center;border-bottom:2px solid #1e40af;padding-bottom:12px}img{max-width:100px;max-height:85px;object-fit:contain}table{width:100%;border-collapse:collapse;margin-top:18px}td,th{padding:8px;border-bottom:1px solid #ddd;text-align:left;vertical-align:top}th{background:#eff6ff}.sum{display:flex;gap:14px;flex-wrap:wrap;margin:16px 0}.sum div{padding:12px;background:#eff6ff;border-radius:8px}@media print{.np{display:none}}</style></head><body><header>' + logo + '<h2>' + esc(pfSet().company) + '</h2><h3>Estado de cuenta de pulpería</h3></header><h3>' + esc(a.business || '') + '</h3><p>Propietario: ' + esc(a.name || '') + ' · Correo: ' + esc(a.email || '') + '</p>' +
+      '<div class="sum"><div><b>Pagos registrados:</b> ' + L.length + '</div><div><b>Aprobados:</b> ' + ok.length + '</div><div><b>Total pagado:</b> ' + pfL(total) + '</div><div><b>Última compra:</b> ' + (last ? fmtDT(last.at) : '—') + '</div><div><b>Membresía vigente hasta:</b> ' + (a.expiresAt ? fmtD(a.expiresAt) : '—') + '</div></div>' +
+      '<table><tr><th>Fecha de compra</th><th>Recibo</th><th>Método</th><th>Meses</th><th>Válido hasta</th><th>Monto</th><th>Estado</th><th class="np"></th></tr>' + rows + '</table><p>Documento generado por ' + esc(pfSet().company) + '</p></body></html>';
+    pfShowDoc(html);
+  };
+
+  window.pfPaymentDelete = async function (pid) {
+    const db = pfDB(), p = db.payments.find(x => x.id === pid); if (!p) return;
+    const a = db.accounts.find(x => x.id === p.accId) || {};
+    if (!confirm('¿Eliminar el pago ' + (p.receiptNo || p.id) + ' de ' + (a.business || '') + ' (' + fmtDT(p.at) + ')? No se puede deshacer.')) return;
+    if (!await adminCode('Eliminar pago')) return;
+    let rollback = false;
+    if (p.status === 'approved' && p.months && a.expiresAt)
+      rollback = confirm('Este pago estaba aprobado y sumó ' + p.months + ' mes(es). ¿Descontarlos también de la membresía?\n\nAceptar = descontar · Cancelar = solo borrar el registro');
+    if (cloudOn()) {
+      await sbReady();
+      const r = await cloud().from('payments').delete().eq('id', pid);
+      if (r.error) return pfMsg('No se pudo eliminar en la base de datos: ' + r.error.message);
+    }
+    db.payments = db.payments.filter(x => x.id !== pid); delete _snap.p[pid];
+    if (rollback) { const d = new Date(a.expiresAt); d.setMonth(d.getMonth() - p.months); a.expiresAt = d.toISOString(); }
+    pfSave(db); pfOwnerPanel(); pfCashStatement(a.id); pfMsg('Pago eliminado ✔', true);
+  };
+
+  /* ---------- 3) Visitas: botón Eliminar (solo con código del administrador) ---------- */
+  const _tc = window.pfTabCash;
+  window.pfTabCash = function (db) {
+    return _tc.apply(this, arguments).replace(
+      /(<button class="pf-btn alt" onclick="pfVisitClose\('([^']+)'\)">Cerrar<\/button>)/g,
+      '$1 <button class="pf-btn alt" onclick="pfVisitDelete(\'$2\')" style="color:#b91c1c;border-color:#fecaca">Eliminar</button>');
+  };
+  window.pfVisitDelete = async function (id) {
+    const db = pfDB(), v = (db.visits || []).find(x => x.id === id); if (!v) return;
+    const a = db.accounts.find(x => x.id === v.accId) || {};
+    if (!confirm('¿Eliminar la visita solicitada por ' + (a.business || '') + '? El cliente podrá enviar una nueva solicitud.')) return;
+    if (!await adminCode('Eliminar visita')) return;
+    if (cloudOn()) {
+      await sbReady();
+      const r = await cloud().from('visits').delete().eq('id', id);
+      if (r.error) return pfMsg('No se pudo eliminar en la base de datos: ' + r.error.message);
+    }
+    db.visits = db.visits.filter(x => x.id !== id); delete _snap.v[id];
+    _pfSaveRaw(db); pfOwnerPanel(); pfMsg('Visita eliminada ✔', true);
+  };
+
+  /* ---------- 4) El cliente puede volver a solicitar la visita ----------
+     Antes de validar "ya tienes una visita pendiente", se refresca desde la base de datos
+     (así no queda guardada la visita ya eliminada). */
+  const _vs = window.pfVisitSend;
+  window.pfVisitSend = async function () {
+    const m = curBlock(); if (m) { pfMsg(m); alert(m); return; }
+    if (cloudOn()) { try { await pfPull(); } catch (e) { console.warn(e); } }
+    return _vs.apply(this, arguments);
+  };
+})();
+</script>
 </body>
 </html>
