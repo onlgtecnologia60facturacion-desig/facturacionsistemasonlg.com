@@ -1767,9 +1767,6 @@ body{font-family:'Manrope','Segoe UI',Tahoma,sans-serif;background:#f1f6fe}
                                 <label>Método de Pago</label>
                                 <select id="paymentMethod" onchange="toggleSaleTypeUI()">
                                     <option value="cash">Efectivo</option>
-                                    <option value="card">Tarjeta</option>
-                                    <option value="check">Cheque</option>
-                                    <option value="transfer">Transferencia</option>
                                     <option value="credit">Crédito (Fiado)</option>
                                 </select>
                             </div>
@@ -2475,6 +2472,27 @@ body{font-family:'Manrope','Segoe UI',Tahoma,sans-serif;background:#f1f6fe}
                     <p style="font-size:.82rem;color:#6b7280">Formato de factura <b>NNN-NNN-NN-NNNNNNNN</b>: establecimiento, punto de emisión, tipo de documento (01 = factura) y correlativo de 8 dígitos. El sistema toma esos datos del rango y avanza el correlativo solo. El RTN (arriba) debe tener 14 dígitos.</p>
                 </div>
 
+                <div class="card" id="invoiceExtraCard">
+                    <h2><i class="fas fa-file-invoice"></i> Datos adicionales de la factura</h2>
+                    <p style="font-size:0.85rem;color:#6b7280;margin-top:-0.5rem;margin-bottom:0.75rem;">
+                        Estos datos los configura el <strong>propietario</strong> y se imprimen al pie de cada factura nueva.
+                        Si dejas un campo vacío, en la factura aparecerá la línea en blanco (____) para llenarla a mano.
+                    </p>
+                    <div class="form-row">
+                        <div class="form-group"><label>No. Orden de compra exenta</label><input type="text" id="settingsExemptOrderNo" maxlength="40" placeholder="Opcional"></div>
+                        <div class="form-group"><label>No. Registro SAG</label><input type="text" id="settingsSagRegNo" maxlength="40" placeholder="Opcional"></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label>No. Registro exonerados</label><input type="text" id="settingsExoneratedRegNo" maxlength="40" placeholder="Opcional"></div>
+                        <div class="form-group"><label>No. Carnet exonerado</label><input type="text" id="settingsExoneratedCardNo" maxlength="40" placeholder="Opcional"></div>
+                    </div>
+                    <div class="form-group">
+                        <label>Mensaje final de la factura</label>
+                        <input type="text" id="settingsInvoiceFooterMsg" maxlength="120" placeholder="La factura es beneficio de todos, exíjala">
+                    </div>
+                    <button type="button" class="btn btn-primary" onclick="saveSettings()"><i class="fas fa-save"></i> Guardar</button>
+                </div>
+
                 <div id="internationalSettingsModal" class="modal">
                     <div class="modal-content intl-modal">
                         <div class="modal-header">
@@ -2534,16 +2552,6 @@ body{font-family:'Manrope','Segoe UI',Tahoma,sans-serif;background:#f1f6fe}
                     </div>
                     <button class="btn btn-primary" onclick="updatePrimaryColor()">
                         <i class="fas fa-paint-brush"></i> Aplicar Color
-                    </button>
-                </div>
-
-                <div class="card">
-                    <h2>Acciones</h2>
-                    <button class="btn btn-primary btn-block" onclick="saveSettings()">
-                        <i class="fas fa-save"></i> Guardar Cambios
-                    </button>
-                    <button class="btn btn-secondary btn-block" style="margin-top: 0.5rem;" onclick="resetAllData()">
-                        <i class="fas fa-exclamation-triangle"></i> Limpiar Todos los Datos
                     </button>
                 </div>
 
@@ -2681,6 +2689,16 @@ body{font-family:'Manrope','Segoe UI',Tahoma,sans-serif;background:#f1f6fe}
                             <tbody id="usersTable"></tbody>
                         </table>
                     </div>
+                </div>
+
+                <div class="card">
+                    <h2>Acciones</h2>
+                    <button class="btn btn-primary btn-block" onclick="saveSettings()">
+                        <i class="fas fa-save"></i> Guardar Cambios
+                    </button>
+                    <button class="btn btn-secondary btn-block" style="margin-top: 0.5rem;" onclick="resetAllData()">
+                        <i class="fas fa-exclamation-triangle"></i> Limpiar Todos los Datos
+                    </button>
                 </div>
             </div>
         </div>
@@ -7128,7 +7146,7 @@ function renderCashPage() {
         card.innerHTML = `<h2>Caja abierta <span class="badge badge-success">${escapeHtml(cs.number)}</span></h2>
         <p style="color:#6b7280;margin:0">${escapeHtml(cs.cashier.name)} · ${escapeHtml(cs.cashier.email)} · ${escapeHtml(cs.cashier.phone)}</p>
         <div class="cash-grid">${b('Caja', escapeHtml(cs.register))}${b('Abierta desde', fmtDT(cs.openedAt))}${b('Fondo inicial', M(cs.openingAmount))}${b('Ventas realizadas', st.count)}${b('Total vendido', M(st.total))}
-        ${b('Ventas en efectivo', M(st.by.cash))}${b('Tarjeta', M(st.by.card))}${b('Transferencia', M(st.by.transfer))}${b('Cheque', M(st.by.check))}${b('Crédito', M(st.by.credit))}
+        ${b('Ventas en efectivo', M(st.by.cash))}${b('Crédito', M(st.by.credit))}${(st.by.card + st.by.transfer + st.by.check) > 0 ? b('Otros (ventas anteriores)', M(st.by.card + st.by.transfer + st.by.check)) : ''}
         ${b('Abonos en efectivo', M(st.abonos))}${b('Ingresos extra', M(st.inn))}${b('Retiros', M(st.out))}${b('Efectivo esperado en caja', M(st.expected), true)}</div>
         <div style="display:flex;gap:.6rem;flex-wrap:wrap"><button class="btn btn-secondary" onclick="addCashMovement('in')"><i class="fas fa-plus"></i> Registrar ingreso</button>
         <button class="btn btn-secondary" onclick="addCashMovement('out')"><i class="fas fa-minus"></i> Registrar retiro</button>
@@ -7201,7 +7219,7 @@ function cashReportBody(x) {
     <div class="receipt-line"><strong>${t('CUADRE DE CAJA')}</strong></div>${ln('Turno:', x.number)}${ln('Cajero:', c.name)}${ln('Caja No.:', x.register)}${ln('Tel:', c.phone)}${ln('Correo:', c.email)}${ln('ID:', c.dni)}
     <div class="receipt-divider-dashed"></div>${row(t('Apertura'), fmtDT(x.openedAt))}${closed ? row(t('Cierre de caja'), fmtDT(x.closedAt)) : ''}
     <div class="receipt-divider-dashed"></div>${row(t('Fondo inicial'), M(x.openingAmount))}${row(t('Ventas realizadas'), st.count)}${row(t('Total vendido'), M(st.total))}
-    ${row(t('Ventas en efectivo'), M(st.by.cash))}${row(t('Tarjeta'), M(st.by.card))}${row(t('Transferencia'), M(st.by.transfer))}${row(t('Cheque'), M(st.by.check))}${row(t('Crédito'), M(st.by.credit))}
+    ${row(t('Ventas en efectivo'), M(st.by.cash))}${row(t('Crédito'), M(st.by.credit))}${(st.by.card + st.by.transfer + st.by.check) > 0 ? row('Otros (ventas anteriores)', M(st.by.card + st.by.transfer + st.by.check)) : ''}
     ${row(t('Abonos en efectivo'), M(st.abonos))}${row(t('Ingresos extra'), M(st.inn))}${row(t('Retiros'), M(st.out))}
     ${(x.movements || []).map(m => `<div class="receipt-line" style="text-align:left">${m.type === 'in' ? '+' : '−'} ${M(m.amount)} · ${escapeHtml(m.reason)}</div>`).join('')}
     <div class="receipt-divider-solid"></div>${row(t('Efectivo esperado en caja'), M(st.expected), 'receipt-grand-total')}
@@ -9859,13 +9877,14 @@ function fxExtra(sale) {
     const base = (sale.total || 0) - tax - (sale.creditInterest || 0), dl = f.deadline ? f.deadline.split('-').reverse().join('/') : '', rtn = String(sale.customerRtn || '').replace(/\D/g, '');
     const head = []; if (f.cai) head.push('CAI: ' + escapeHtml(fxCai(f.cai) || f.cai)); if (f.from && f.to) head.push('Rango autorizado: del ' + escapeHtml(f.from) + ' al ' + escapeHtml(f.to));
     const ln = x => '<div>' + x + '</div>';
+    const ix = c.invoiceExtra || {}, fld = (lbl, v) => ln(lbl + ': ' + (v ? '<b>' + escapeHtml(v) + '</b>' : '____________'));
     const foot = '<div style="font-size:.78em;margin-top:.6rem;border-top:1px dashed #999;padding-top:.4rem;line-height:1.5">' +
         ln('<b>RTN cliente:</b> ' + (rtn ? escapeHtml(rtn) : 'Consumidor Final')) +
         '<table style="width:100%;border-collapse:collapse;text-align:right"><tr><th style="text-align:left">IMP%</th><th>PRECIO</th><th>IMPUESTO</th><th>TOTAL</th></tr><tr><td style="text-align:left">' + (tax > 0 ? 'G ' + rate : 'E 0') + '</td><td>' + fm(base) + '</td><td>' + fm(tax) + '</td><td>' + fm(sale.total || 0) + '</td></tr></table>' +
         ln('<b>SON:</b> ' + escapeHtml(sale.totalWords || numeroALetras(sale.total))) +
-        ln('No. Orden de compra exenta: ____________') + ln('No. Registro SAG: ____________') + ln('No. Registro exonerados: ____________') + ln('No. Carnet exonerado: ____________') +
+        fld('No. Orden de compra exenta', ix.exemptOrderNo) + fld('No. Registro SAG', ix.sagRegNo) + fld('No. Registro exonerados', ix.exoneratedRegNo) + fld('No. Carnet exonerado', ix.exoneratedCardNo) +
         ln('G = artículo gravado · E = artículo exento') + ln('<b>Original:</b> Cliente · <b>Copia:</b> Obligado tributario emisor') + (dl ? ln('<b>Fecha límite de emisión:</b> ' + dl) : '') +
-        '<div style="text-align:center;margin-top:.3rem">La factura es beneficio de todos, exíjala</div></div>';
+        '<div style="text-align:center;margin-top:.3rem">' + escapeHtml(ix.footerMsg || 'La factura es beneficio de todos, exíjala') + '</div></div>';
     return { head, foot };
 }
 const _ip11 = ivtParts, _it11 = ivtTotals, _ir11 = ivtRender;
@@ -11823,6 +11842,59 @@ pfProceed = async function (acc) {
   [0, 400, 1200].forEach(ms => setTimeout(wrapAll, ms));
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wrapAll);
   else wrapAll();
+})();
+</script>
+
+<script id="onlg-invoice-extra-v1">
+/* Datos adicionales de la factura (Ajustes, solo propietario) */
+(function () {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const MAP = [
+    ['settingsExemptOrderNo', 'exemptOrderNo'],
+    ['settingsSagRegNo', 'sagRegNo'],
+    ['settingsExoneratedRegNo', 'exoneratedRegNo'],
+    ['settingsExoneratedCardNo', 'exoneratedCardNo'],
+    ['settingsInvoiceFooterMsg', 'footerMsg']
+  ];
+  const owner = () => { try { return typeof isOwner === 'function' && isOwner(); } catch (e) { return false; } };
+
+  function showForOwner() {
+    const c = $('invoiceExtraCard');
+    if (c) c.style.display = owner() ? '' : 'none';
+  }
+  function fill() {
+    const ix = (appData.company && appData.company.invoiceExtra) || {};
+    MAP.forEach(([id, k]) => { const el = $(id); if (el) el.value = ix[k] || ''; });
+  }
+
+  const _ls = loadSettings;
+  loadSettings = function () {
+    const r = _ls.apply(this, arguments);
+    try { fill(); showForOwner(); } catch (e) {}
+    return r;
+  };
+
+  const _ss = saveSettings;
+  saveSettings = function () {
+    try {
+      if (owner() && $('invoiceExtraCard')) {
+        appData.company = appData.company || {};
+        const ix = appData.company.invoiceExtra = appData.company.invoiceExtra || {};
+        MAP.forEach(([id, k]) => { const el = $(id); if (el) ix[k] = el.value.trim(); });
+      }
+    } catch (e) {}
+    return _ss.apply(this, arguments);
+  };
+
+  const _arp = applyRolePermissions;
+  applyRolePermissions = function () {
+    const r = _arp.apply(this, arguments);
+    try { showForOwner(); } catch (e) {}
+    return r;
+  };
+
+  window.addEventListener('DOMContentLoaded', () => setTimeout(showForOwner, 150));
 })();
 </script>
 
