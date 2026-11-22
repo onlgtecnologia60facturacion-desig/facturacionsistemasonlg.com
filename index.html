@@ -10405,8 +10405,19 @@ pfProceed = async function (acc) {
         const r = await cloud().functions.invoke('staff-create-user', { body: { name, username, email: mail, phone: pfPhoneNorm(ph), role, password } });
         if (r.error || (r.data && r.data.error)) return pfMsg((r.data && r.data.error) || sbErr(r.error));
         await loadOwner(); renderOwner();
+        /* Verificación real: intenta entrar con una conexión aparte (no toca tu sesión) para confirmar que la cuenta de acceso existe */
+        let check = 'unknown';
+        try {
+            const tmp = window.supabase.createClient(PLATFORM_CONFIG.supabaseUrl, PLATFORM_CONFIG.supabaseAnonKey, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } });
+            const t = await tmp.auth.signInWithPassword({ email: mail, password });
+            if (t.error) { const m = t.error.message || ''; check = /invalid login/i.test(m) ? 'bad' : /not confirmed/i.test(m) ? 'unconfirmed' : 'unknown'; }
+            else { check = String(((t.data && t.data.user && t.data.user.user_metadata) || {}).staff_username || '').toLowerCase() === username ? 'ok' : 'nometa'; try { await tmp.auth.signOut({ scope: 'local' }); } catch (e) {} }
+        } catch (e) {}
+        if (check === 'bad') return pfMsg('⚠ El usuario quedó en la lista, pero la cuenta de acceso NO se creó en Supabase (Authentication → Users), así que no podrá entrar. Revisa los Logs de la función staff-create-user.');
+        if (check === 'unconfirmed') return pfMsg('⚠ La cuenta se creó pero su correo no está confirmado, por eso no podrá entrar. Confírmalo en Supabase (Authentication → Users) o activa "Auto confirm" en la función.');
+        if (check === 'nometa') return pfMsg('⚠ La cuenta existe, pero no guarda el nombre de usuario (staff_username), así que el login con usuario fallará. La función staff-create-user debe guardarlo en user_metadata.');
         ['stName','stUsername','stMail','stPhone','stPassword'].forEach(id => { const el = gid(id); if (el) el.value = ''; });
-        pfMsg('Usuario creado. Entrégale su usuario, correo y contraseña inicial de forma privada.', true);
+        pfMsg('Usuario creado' + (check === 'ok' ? ' y acceso verificado ✔' : '') + '. Entrégale su usuario, correo y contraseña inicial de forma privada.', true);
     };
     window.stToggle = async function (id) {
         const r0 = ST.rows.find(x => x.id === id); if (!r0) return;
