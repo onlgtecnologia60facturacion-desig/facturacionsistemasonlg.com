@@ -1794,7 +1794,17 @@ body{font-family:'Manrope','Segoe UI',Tahoma,sans-serif;background:#f1f6fe}
 
                 <div class="grid">
                     <div class="card" style="grid-column: 1 / -1;">
-                        <h2>Productos en Venta</h2>
+                        <div style="display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:wrap;margin-bottom:.75rem;">
+                            <h2 style="margin:0;">Productos en Venta</h2>
+                            <div style="display:flex;gap:.45rem;flex-wrap:wrap;">
+                                <button type="button" class="btn btn-secondary btn-small" id="saleUndoBtn" onclick="saleUndo()" title="Deshacer (Ctrl+Z)" disabled>
+                                    <i class="fas fa-rotate-left"></i> Deshacer
+                                </button>
+                                <button type="button" class="btn btn-secondary btn-small" id="saleRedoBtn" onclick="saleRedo()" title="Rehacer (Ctrl+Y)" disabled>
+                                    <i class="fas fa-rotate-right"></i> Rehacer
+                                </button>
+                            </div>
+                        </div>
                         <div class="table-responsive">
                             <table class="stack-on-mobile">
                                 <thead>
@@ -5563,12 +5573,16 @@ function updateHistoryTable() {
                </button>`
             : '';
 
-        // Eliminar una factura es una acción delicada (reversa stock, deudas,
-        // etc.), así que solo se ofrece el botón si quien tiene la sesión
-        // abierta es Administrador.
-        const deleteBtn = (currentUser && currentUser.role === 'admin' && !sale.cancelled)
-            ? `<button class="btn btn-small btn-danger" onclick="cancelSale(${sale.id})" title="Cancelar venta">
-                    <i class="fas fa-ban"></i> Cancelar venta
+        // Cancelar: revierte inventario. Eliminar: solo oculta del historial (admin).
+        const isAdmin = currentUser && currentUser.role === 'admin';
+        const cancelBtn = (isAdmin && !sale.cancelled)
+            ? `<button class="btn btn-small btn-danger" onclick="cancelSale(${sale.id})" title="Cancelar venta (devuelve stock)">
+                    <i class="fas fa-ban"></i> Cancelar
+               </button>`
+            : '';
+        const deleteBtn = isAdmin
+            ? `<button class="btn btn-small btn-secondary" onclick="deleteSale(${sale.id})" title="Eliminar del historial (no cambia inventario)" style="border-color:#fecaca;color:#b91c1c;">
+                    <i class="fas fa-trash"></i> Eliminar
                </button>`
             : '';
 
@@ -5589,6 +5603,7 @@ function updateHistoryTable() {
                         <i class="fas fa-print"></i> Imprimir
                     </button>
                     ${markPaidBtn}
+                    ${cancelBtn}
                     ${deleteBtn}
                 </td>
             </tr>
@@ -5648,43 +5663,52 @@ function cancelSale(saleId) {
 
 function deleteSale(saleId) {
     if (!currentUser || currentUser.role !== 'admin') {
-        alert('Solo un Administrador puede eliminar facturas');
+        alert('Solo un Administrador puede eliminar facturas del historial');
         return;
     }
 
-    const sale = appData.sales.find(s => s.id === saleId);
+    let sale = appData.sales.find(s => s.id === saleId);
+    let fromCancelled = false;
+    if (!sale && appData.cancelledSales) {
+        sale = appData.cancelledSales.find(s => s.id === saleId);
+        fromCancelled = !!sale;
+    }
     if (!sale) return;
 
-    const hasPendingDebt = appData.debts.some(d => d.saleId === saleId && !d.paid);
-    let message = `¿Eliminar la factura ${sale.number} por ${formatMoney(sale.total)}?\n\nLa factura desaparecerá del Historial y, si tenía una deuda pendiente, se quitará de Cuentas de Crédito. El stock ya vendido NO se devolverá al inventario, y la venta seguirá contando en el Dashboard y en Reportes. Esta acción NO se puede deshacer.`;
+    const hasPendingDebt = (appData.debts || []).some(d => d.saleId === saleId && !d.paid);
+    let message = `¿Eliminar la factura ${sale.number} por ${formatMoney(sale.total)} del historial?\n\n• NO se modifica el inventario (el stock queda como está).\n• Si había deuda pendiente, se quita de Cuentas de Crédito.\n• La venta sigue contando en Dashboard y Reportes.\n• Esta acción NO se puede deshacer.`;
     if (hasPendingDebt) {
-        message = `⚠️ Esta factura tiene una deuda PENDIENTE de ${formatMoney(sale.total)} en Cuentas de Crédito.\n\n${message}`;
+        message = `⚠️ Esta factura tiene una deuda PENDIENTE.\n\n${message}`;
     }
-
     if (!confirm(message)) return;
 
-    // Quitar cualquier deuda ligada a esta venta (deja de rastrearse como
-    // pendiente de cobro)
-    appData.debts = appData.debts.filter(d => d.saleId !== saleId);
+    appData.debts = (appData.debts || []).filter(d => d.saleId !== saleId);
 
-    // No se borra del array de ventas -a propósito- para que Reportes y el
-    // Dashboard sigan contándola. Solo se marca para ocultarla del Historial.
-    sale.invoiceDeleted = true;
-    sale.invoiceDeletedAt = new Date().toISOString();
+    if (fromCancelled) {
+        // Quitar del listado de canceladas (solo visual)
+        appData.cancelledSales = (appData.cancelledSales || []).filter(s => s.id !== saleId);
+        // Si aún existe en sales, marcarla
+        const live = appData.sales.find(s => s.id === saleId);
+        if (live) {
+            live.invoiceDeleted = true;
+            live.invoiceDeletedAt = new Date().toISOString();
+        }
+    } else {
+        sale.invoiceDeleted = true;
+        sale.invoiceDeletedAt = new Date().toISOString();
+        sale.invoiceDeletedBy = (currentUser && currentUser.name) || 'Administrador';
+    }
 
     saveData();
     updateHistoryTable();
-    updateDebtsTable();
-    updateCreditAccountsPage();
-    updateCustomersTable();
-    updateDashboard();
-    alert('Factura eliminada del Historial. El stock no fue alterado y la venta se sigue contando en Reportes.');
+    if (typeof updateDebtsTable === 'function') updateDebtsTable();
+    if (typeof updateCreditAccountsPage === 'function') updateCreditAccountsPage();
+    if (typeof updateCustomersTable === 'function') updateCustomersTable();
+    if (typeof updateDashboard === 'function') updateDashboard();
+    alert('Factura eliminada del historial. El inventario no fue modificado.');
 }
 
-// Corrige ventas antiguas que quedaron "Pendiente" sin una deuda asociada
-// (por ejemplo, guardadas antes de esta corrección de Crédito). No toca
-// ninguna venta que sí tenga una deuda real en Deudas/Cuentas de Crédito;
-// esas se pagan desde ahí para mantener todo sincronizado.
+
 function markSalePaidManually(saleId) {
     const sale = appData.sales.find(s => s.id === saleId);
     if (!sale) return;
@@ -11663,6 +11687,142 @@ pfProceed = async function (acc) {
   if (document.body) obs.observe(document.body, { childList: true, subtree: true });
   [0, 200, 800, 2000].forEach(ms => setTimeout(() => { wrapOwnerFlags(); cleanPublicFooter(); }, ms));
   window.addEventListener('hashchange', () => setTimeout(cleanPublicFooter, 30));
+})();
+</script>
+
+
+<script id="onlg-sale-undo-delete">
+/* Deshacer/Rehacer en Nueva Venta + asegurar Eliminar solo admin sin tocar inventario */
+(function () {
+  'use strict';
+  const MAX = 40;
+  let undoStack = [];
+  let redoStack = [];
+  let applying = false;
+
+  function cloneCart(arr) {
+    try { return JSON.parse(JSON.stringify(arr || [])); } catch (e) { return []; }
+  }
+
+  function updateUndoButtons() {
+    const u = document.getElementById('saleUndoBtn');
+    const r = document.getElementById('saleRedoBtn');
+    if (u) u.disabled = undoStack.length === 0;
+    if (r) r.disabled = redoStack.length === 0;
+  }
+
+  function pushState() {
+    if (applying) return;
+    if (typeof currentSale === 'undefined') return;
+    const snap = cloneCart(currentSale);
+    const last = undoStack[undoStack.length - 1];
+    if (last && JSON.stringify(last) === JSON.stringify(snap)) return;
+    undoStack.push(snap);
+    if (undoStack.length > MAX) undoStack.shift();
+    redoStack = [];
+    updateUndoButtons();
+  }
+
+  function applyCart(state) {
+    applying = true;
+    try {
+      currentSale = cloneCart(state);
+      if (typeof updateSaleItemsTable === 'function') updateSaleItemsTable();
+    } finally {
+      applying = false;
+      updateUndoButtons();
+    }
+  }
+
+  window.saleUndo = function () {
+    if (!undoStack.length) return;
+    const current = cloneCart(currentSale);
+    const prev = undoStack.pop();
+    redoStack.push(current);
+    applyCart(prev);
+  };
+
+  window.saleRedo = function () {
+    if (!redoStack.length) return;
+    const current = cloneCart(currentSale);
+    const next = redoStack.pop();
+    undoStack.push(current);
+    applyCart(next);
+  };
+
+  window.saleResetHistory = function () {
+    undoStack = [];
+    redoStack = [];
+    updateUndoButtons();
+  };
+
+  // Envolver mutaciones del carrito para guardar historial
+  function wrap(name) {
+    if (typeof window[name] !== 'function' || window[name].__onlgUndo) return;
+    const orig = window[name];
+    window[name] = function () {
+      if (!applying && typeof currentSale !== 'undefined') {
+        // Guardar estado ANTES del cambio
+        const snap = cloneCart(currentSale);
+        const last = undoStack[undoStack.length - 1];
+        if (!last || JSON.stringify(last) !== JSON.stringify(snap)) {
+          undoStack.push(snap);
+          if (undoStack.length > MAX) undoStack.shift();
+          redoStack = [];
+        }
+      }
+      const r = orig.apply(this, arguments);
+      updateUndoButtons();
+      return r;
+    };
+    window[name].__onlgUndo = true;
+  }
+
+  function wrapAll() {
+    ['addToSale', 'removeSaleItem', 'updateSaleItemQuantity', 'updateSaleItemDiscount', 'clearSale'].forEach(wrap);
+    // clearSale también limpia el historial de deshacer
+    if (typeof window.clearSale === 'function' && !window.clearSale.__onlgClearHist) {
+      const c = window.clearSale;
+      window.clearSale = function () {
+        const r = c.apply(this, arguments);
+        saleResetHistory();
+        return r;
+      };
+      window.clearSale.__onlgClearHist = true;
+    }
+    if (typeof window.completeSale === 'function' && !window.completeSale.__onlgClearHist) {
+      const cs = window.completeSale;
+      window.completeSale = function () {
+        const r = cs.apply(this, arguments);
+        // Tras completar, el carrito se vacía: reiniciar historial
+        setTimeout(saleResetHistory, 50);
+        return r;
+      };
+      window.completeSale.__onlgClearHist = true;
+    }
+    updateUndoButtons();
+  }
+
+  // Atajos de teclado Ctrl+Z / Ctrl+Y / Ctrl+Shift+Z
+  document.addEventListener('keydown', function (e) {
+    const tag = (e.target && e.target.tagName) || '';
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') {
+      // Permitir deshacer solo si no es campo de texto con selección propia… mejor solo fuera de inputs de texto libre
+      if (tag === 'TEXTAREA') return;
+      // en inputs numéricos del carrito sí permitimos Ctrl+Z global del carrito
+    }
+    const salePage = document.getElementById('sale');
+    if (!salePage || !salePage.classList.contains('active')) return;
+    if ((e.ctrlKey || e.metaKey) && !e.altKey) {
+      const k = (e.key || '').toLowerCase();
+      if (k === 'z' && !e.shiftKey) { e.preventDefault(); saleUndo(); }
+      else if (k === 'y' || (k === 'z' && e.shiftKey)) { e.preventDefault(); saleRedo(); }
+    }
+  });
+
+  [0, 400, 1200].forEach(ms => setTimeout(wrapAll, ms));
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wrapAll);
+  else wrapAll();
 })();
 </script>
 
