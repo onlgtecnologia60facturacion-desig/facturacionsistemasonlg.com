@@ -11909,5 +11909,85 @@ pfProceed = async function (acc) {
 })();
 </script>
 
+
+<script>
+/* ===== Arreglo: entrar con correo+contraseña cuando la cuenta se creó con Google =====
+   Las cuentas creadas con Google NO tienen contraseña. Este bloque agrega el enlace
+   "Crear / recuperar contraseña" (código al correo) y mejora el mensaje de error. */
+(function () {
+    // 1) Mensaje de error más claro
+    const _sbErrOrig = pfSbErr;
+    pfSbErr = function (e) {
+        const m = (e && e.message) || '';
+        if (/invalid login/i.test(m)) return 'Correo o contraseña incorrectos. Si creaste tu cuenta con Google, usa «Continuar con Google» o toca «Crear / recuperar contraseña».';
+        return _sbErrOrig(e);
+    };
+
+    // 2) Enlace bajo el botón Entrar
+    function addLink() {
+        const f = document.getElementById('pfT_in');
+        if (!f || document.getElementById('pfForgotLink')) return;
+        const btn = f.querySelector('button[onclick="pfLogin()"]'); if (!btn) return;
+        const p = document.createElement('p');
+        p.id = 'pfForgotLink'; p.style.cssText = 'text-align:center;margin:.6rem 0 0;font-size:.9rem';
+        p.innerHTML = '<a href="#" onclick="pfForgot();return false">Crear / recuperar contraseña</a>';
+        btn.insertAdjacentElement('afterend', p);
+    }
+    new MutationObserver(addLink).observe(document.body, { childList: true, subtree: true });
+    window.addEventListener('DOMContentLoaded', () => setTimeout(addLink, 300));
+
+    // 3) Enviar código al correo (reutiliza la pantalla de código que ya existe)
+    window.pfForgot = async function () {
+        if (!cloudOn()) return pfMsg('Esta función necesita la base de datos conectada.');
+        const mail = ((document.getElementById('inMail') || {}).value || '').trim().toLowerCase();
+        if (!/^\S+@\S+\.\S+$/.test(mail)) return pfMsg('Escribe tu correo arriba y vuelve a tocar este enlace.');
+        if (!pfBotOk()) return;
+        if (PLATFORM_CONFIG.turnstileSiteKey && !_capTok) return pfMsg('Completa la verificación de seguridad (“no soy un robot”).');
+        await sbReady();
+        const o = { shouldCreateUser: false };
+        if (PLATFORM_CONFIG.turnstileSiteKey && _capTok) o.captchaToken = _capTok;
+        const r = await cloud().auth.signInWithOtp({ email: mail, options: o });
+        pfCapReset();
+        if (r.error) return pfMsg(pfSbErr(r.error));
+        sessionStorage.setItem('pfSetPw', '1');
+        pfOtpView.type = 'email'; pfOtpView(mail);
+        const h = document.querySelector('#pfOtp h3'), p = document.querySelector('#pfOtp p');
+        if (h) h.textContent = 'Revisa tu correo';
+        if (p) p.innerHTML = 'Te enviamos un código a <b>' + mail.replace(/[<>&]/g, '') + '</b>. Escríbelo para entrar y crear tu contraseña.';
+    };
+
+    // 4) Al entrar con ese código, pedir la contraseña nueva
+    function pwDialog() {
+        if (document.getElementById('pfSetPw')) return;
+        const d = document.createElement('div'); d.id = 'pfSetPw';
+        d.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,.6);z-index:99999;display:flex;align-items:center;justify-content:center;padding:1rem';
+        d.innerHTML = '<div style="background:#fff;border-radius:18px;padding:1.4rem;max-width:400px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3)">' +
+            '<h3 style="margin:0 0 .4rem">Crea tu contraseña</h3><p style="margin:0 0 .8rem;color:#475569;font-size:.9rem">Así podrás entrar con correo y contraseña además de Google.</p>' +
+            '<input type="password" id="spw1" placeholder="Contraseña nueva" autocomplete="new-password" style="width:100%;margin-bottom:.5rem">' +
+            '<input type="password" id="spw2" placeholder="Repite la contraseña" autocomplete="new-password" style="width:100%">' +
+            '<p id="spwMsg" style="color:#dc2626;font-size:.85rem;min-height:1.2em;margin:.5rem 0"></p>' +
+            '<button class="pf-btn" style="width:100%" id="spwOk">Guardar contraseña</button>' +
+            '<button class="pf-btn alt" style="width:100%;margin-top:.5rem" id="spwNo">Ahora no</button></div>';
+        document.body.appendChild(d);
+        const msg = t => { document.getElementById('spwMsg').textContent = t; };
+        document.getElementById('spwNo').onclick = () => d.remove();
+        document.getElementById('spwOk').onclick = async () => {
+            const a = document.getElementById('spw1').value, b = document.getElementById('spw2').value;
+            const er = pfPwErrors(a, {}); if (er.length) return msg('Falta: ' + er.join(', ') + '.');
+            if (a !== b) return msg('Las contraseñas no coinciden.');
+            const r = await cloud().auth.updateUser({ password: a });
+            if (r.error) return msg(pfSbErr(r.error));
+            d.querySelector('div').innerHTML = '<h3>Listo ✔</h3><p>Ya puedes entrar con tu correo y contraseña.</p><button class="pf-btn" style="width:100%" onclick="this.closest(\'#pfSetPw\').remove()">Continuar</button>';
+        };
+    }
+    const _proc = window.pfProceed;
+    window.pfProceed = async function () {
+        const r = await _proc.apply(this, arguments);
+        if (sessionStorage.getItem('pfSetPw')) { sessionStorage.removeItem('pfSetPw'); setTimeout(pwDialog, 500); }
+        return r;
+    };
+})();
+</script>
+
 </body>
 </html>
