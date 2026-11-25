@@ -9580,13 +9580,13 @@ function pfOtpView(mail) {
     const box = document.querySelector('#pf_auth .pf-box'); if (!box) return; box.classList.add('otp-off');
     const d = document.createElement('div'); d.id = 'pfOtp'; d.className = 'pf-box pf-otp';
     d.innerHTML = '<img class="pf-authlogo" src="' + LOGO10 + '" alt="ONLG"><h3>Confirma tu correo</h3><p>Te enviamos un código a <b>' + escapeHtml(mail) + '</b>. Escríbelo para activar tu cuenta.</p>' +
-        '<input id="otpCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" oninput="this.value=this.value.replace(/[^0-9]/g,String())" placeholder="••••••"><button class="pf-btn pf-full" onclick="pfOtpVerify()">Confirmar y entrar</button>' +
+        '<input id="otpCode" inputmode="numeric" autocomplete="one-time-code" maxlength="8" oninput="this.value=this.value.replace(/[^0-9]/g,String())" placeholder="••••••••"><button class="pf-btn pf-full" onclick="pfOtpVerify()">Confirmar y entrar</button>' +
         '<button class="pf-btn alt pf-full" id="otpResend" style="margin-top:.5rem" onclick="pfOtpResend()">Reenviar código</button>' +
         '<p style="text-align:center;margin-top:.8rem"><a href="#" onclick="pfOtpClose();return false">Usar otro correo</a></p>';
     box.parentNode.insertBefore(d, box.nextSibling); pfOtpCool(); setTimeout(() => { const i = gid('otpCode'); if (i) i.focus(); }, 60);
 }
 async function pfOtpVerify() {
-    const tok = gid('otpCode').value.replace(/\D/g, ''); if (tok.length < 6) return pfMsg('Escribe el código de 6 dígitos que llegó a tu correo.');
+    const tok = gid('otpCode').value.replace(/\D/g, ''); if (tok.length < 6) return pfMsg('Escribe el código que llegó a tu correo (6 a 8 dígitos).');
     await sbReady(); const r = await cloud().auth.verifyOtp({ email: pfOtpView.mail, token: tok, type: 'signup' });
     if (r.error || !r.data.user) return pfMsg('Código incorrecto o vencido. Pide uno nuevo con “Reenviar código”.');
     pfOtpClose(); await pfPull(); const acc = pfDB().accounts.find(a => a.id === r.data.user.id);
@@ -9785,7 +9785,7 @@ function pfLocalOtpStart() {
     pfLocalOtpSend(mail); return false;
 }
 pfOtpVerify = async function () {
-    const tok = gid('otpCode').value.replace(/\D/g, ''); if (tok.length !== 6) return pfMsg('Escribe el código de 6 dígitos que llegó a tu correo.');
+    const tok = gid('otpCode').value.replace(/\D/g, ''); if (tok.length < 6 || tok.length > 8) return pfMsg('Escribe el código que llegó a tu correo (6 a 8 dígitos).');
     if (!cloudOn()) {
         const L = pfLocalOtp; if (!L.code || Date.now() > L.exp) return pfMsg('El código venció. Pide uno nuevo.');
         if (++L.tries > 5) { L.code = ''; return pfMsg('Demasiados intentos. Pide un código nuevo.'); }
