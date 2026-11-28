@@ -10403,7 +10403,12 @@ pfProceed = async function (acc) {
         if (pwErrors.length) return pfMsg('La contraseña no es suficientemente segura. Falta: ' + pwErrors.join(', ') + '.');
         await sbReady();
         const r = await cloud().functions.invoke('staff-create-user', { body: { name, username, email: mail, phone: pfPhoneNorm(ph), role, password } });
-        if (r.error || (r.data && r.data.error)) return pfMsg((r.data && r.data.error) || sbErr(r.error));
+        if (r.error || (r.data && r.data.error)) {
+            let real = (r.data && r.data.error) || '';
+            try { if (!real && r.error && r.error.context && r.error.context.json) { const j = await r.error.context.clone().json(); real = j.error || j.message || JSON.stringify(j); } } catch (e) {}
+            if (!real) { try { real = await r.error.context.text(); } catch (e) {} }
+            return pfMsg(real ? 'La función respondió: ' + real : sbErr(r.error));
+        }
         await loadOwner(); renderOwner();
         /* Verificación real: intenta entrar con una conexión aparte (no toca tu sesión) para confirmar que la cuenta de acceso existe */
         let check = 'unknown';
@@ -11989,5 +11994,178 @@ pfProceed = async function (acc) {
 })();
 </script>
 
+
+<script>
+/* ===== ONLG v2: (1) personal fuera de "Cuentas", (2) pestaña Respaldo, (3) historial de compras, (4) Análisis del negocio ===== */
+(function () {
+    const $ = id => document.getElementById(id);
+    const E = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+    /* ---------- 1) El personal (cobradores/mantenimiento) NO es una empresa ---------- */
+    const staffMails = new Set();
+    async function loadStaffMails() {
+        try { const sb = cloud(); if (!sb || !pfOwner.ok) return; const r = await sb.from('platform_staff').select('*'); (r.data || []).forEach(x => { if (x.email) staffMails.add(String(x.email).toLowerCase()); }); } catch (e) {}
+    }
+    const _pull = pfPull;
+    pfPull = async function () {
+        const db = await _pull.apply(this, arguments);
+        await loadStaffMails();
+        if (staffMails.size && db && db.accounts) { db.accounts = db.accounts.filter(a => !staffMails.has(String(a.email || '').toLowerCase())); try { _pfSaveRaw(db); } catch (e) {} }
+        return db;
+    };
+    function patchRpc() {
+        try {
+            const sb = cloud(); if (!sb || sb.__stf) return; const o = sb.rpc.bind(sb);
+            sb.rpc = function (n, a) {
+                const q = o(n, a); if (n !== 'staff_accounts') return q;
+                return Promise.resolve(q).then(async r => {
+                    try { const s = (await sb.auth.getSession()).data.session, me = s && s.user && String(s.user.email || '').toLowerCase();
+                        if (r && r.data && Array.isArray(r.data.accounts) && me) r.data.accounts = r.data.accounts.filter(x => String(x.email || '').toLowerCase() !== me); } catch (e) {}
+                    return r;
+                });
+            };
+            sb.__stf = 1;
+        } catch (e) {}
+    }
+    setInterval(patchRpc, 2000);
+
+    /* ---------- 2) y 3) Panel del propietario: pestaña Respaldo + historial por negocio ---------- */
+    const dl = (name, text, type) => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type: type || 'application/json' })); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500); };
+    const csv = rows => '\ufeff' + rows.map(r => r.map(v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"').join(',')).join('\r\n');
+    const stamp = () => new Date().toISOString().slice(0, 10);
+    const ST = { paid: 'Aprobado', approved: 'Aprobado', pending: 'Pendiente', rejected: 'Rechazado', revoked: 'Revocado' };
+    const stName = s => ({ approved: 'Aprobado', pending: 'Pendiente', rejected: 'Rechazado', revoked: 'Revocado' }[s] || s || '');
+
+    window.onlgBackupJson = function () {
+        const db = pfDB(), copy = JSON.parse(JSON.stringify(db)); delete copy.owner; /* nunca se exporta el secreto del propietario */
+        const out = { app: 'ONLG', tipo: 'copia-de-seguridad-propietario', fecha: new Date().toISOString(), cuentas: copy.accounts || [], pagos: copy.payments || [], visitas: copy.visits || [], ajustes: copy.settings || {} };
+        dl('ONLG_respaldo_' + stamp() + '.json', JSON.stringify(out, null, 2));
+        try { localStorage.setItem('onlgLastBackup', new Date().toISOString()); } catch (e) {} pfOwnerPanel();
+    };
+    window.onlgBackupCsv = function (what) {
+        const db = pfDB();
+        if (what === 'accounts') dl('ONLG_cuentas_' + stamp() + '.csv', csv([['Negocio', 'Propietario', 'Correo', 'Vence']].concat((db.accounts || []).map(a => [a.business, a.name, a.email, a.expiresAt ? String(a.expiresAt).slice(0, 10) : '']))), 'text/csv');
+        else dl('ONLG_compras_' + stamp() + '.csv', csv([['Fecha', 'Negocio', 'Correo', 'Recibo', 'Plan', 'Meses', 'Monto', 'Método', 'Estado']].concat((db.payments || []).map(p => { const a = (db.accounts || []).find(x => x.id === p.accId) || {}; return [new Date(p.at).toLocaleString('es-HN'), a.business, a.email, p.receiptNo || '', p.plan || '', p.months || '', (typeof pfPaymentLps === 'function' ? pfPaymentLps(p) : p.price), p.method || '', stName(p.status)]; }))), 'text/csv');
+    };
+    function backupHTML(db) {
+        let last = ''; try { last = localStorage.getItem('onlgLastBackup') || ''; } catch (e) {}
+        const old = !last || (Date.now() - new Date(last)) > 7 * 864e5;
+        return '<h3><i class="fas fa-shield-halved"></i> Copia de seguridad de mi empresa</h3>' +
+            '<div class="pf-box" style="max-width:640px;margin:1rem 0"><p>Descarga todo lo de tu empresa: <b>' + (db.accounts || []).length + '</b> negocios y <b>' + (db.payments || []).length + '</b> pagos/compras.</p>' +
+            '<p style="color:' + (old ? '#b91c1c' : '#166534') + '">' + (last ? 'Última copia: ' + new Date(last).toLocaleString('es-HN') + (old ? ' — ya pasó más de una semana, descarga una nueva.' : '') : 'Todavía no has descargado ninguna copia.') + '</p>' +
+            '<button class="pf-btn pf-full" onclick="onlgBackupJson()"><i class="fas fa-download"></i> Descargar copia completa (JSON)</button>' +
+            '<button class="pf-btn alt pf-full" style="margin-top:.5rem" onclick="onlgBackupCsv(\'pay\')"><i class="fas fa-file-excel"></i> Historial de compras (Excel/CSV)</button>' +
+            '<button class="pf-btn alt pf-full" style="margin-top:.5rem" onclick="onlgBackupCsv(\'accounts\')"><i class="fas fa-file-excel"></i> Lista de negocios (Excel/CSV)</button>' +
+            '<p style="color:#64748b;font-size:.85rem;margin-top:.8rem">La copia no incluye tu código secreto ni contraseñas. Guárdala en un lugar seguro (tu correo, USB o nube).</p></div>';
+    }
+    window.onlgHistShow = function (id) {
+        const box = $('onlgHistBox'); if (!box) return; if (!id) { box.innerHTML = ''; return; }
+        const db = pfDB(), a = (db.accounts || []).find(x => x.id === id); if (!a) return;
+        const L = (db.payments || []).filter(p => p.accId === id).sort((x, y) => new Date(y.at) - new Date(x.at));
+        const ok = L.filter(p => p.status === 'approved'), tot = ok.reduce((n, p) => n + (typeof pfPaymentLps === 'function' ? pfPaymentLps(p) : Number(p.price || 0)), 0);
+        box.innerHTML = '<p><b>' + E(a.business) + '</b> · ' + E(a.email) + '<br>Compras aprobadas: <b>' + ok.length + '</b> · Total pagado: <b>' + (typeof pfL === 'function' ? pfL(tot) : tot) + '</b></p>' +
+            (L.length ? pfWrap('<table class="pf-t"><tr><th>Fecha</th><th>Recibo</th><th>Plan</th><th>Monto</th><th>Método</th><th>Estado</th><th></th></tr>' + L.map(p => '<tr><td>' + new Date(p.at).toLocaleDateString('es-HN') + '</td><td>' + E(p.receiptNo || '—') + '</td><td>' + E(p.months) + ' m</td><td>' + pfAmtPay(p) + '</td><td>' + E(p.method || '') + '</td><td>' + stName(p.status) + '</td><td><button class="pf-btn alt" onclick="pfPaymentDelete(\'' + p.id + '\')">Eliminar</button></td></tr>').join('') + '</table>') : '<p style="color:#64748b">Este negocio todavía no ha comprado nada.</p>') +
+            '<small style="color:#64748b">Eliminar un registro pide tu código de administrador. Los negocios solo pueden ver su historial, no borrarlo.</small>';
+    };
+    const _tabAcc = window.pfTabAcc;
+    window.pfTabAcc = function (db) {
+        if (pfOwner.tab === 'backup') return backupHTML(db || pfDB());
+        const base = _tabAcc.apply(this, arguments); db = db || pfDB();
+        return base + '<div class="pf-box" style="margin:1rem 0"><h3><i class="fas fa-clock-rotate-left"></i> Historial de compras por negocio</h3><label class="pf-l">Elige el negocio</label><select id="onlgHistSel" onchange="onlgHistShow(this.value)"><option value="">— Selecciona —</option>' +
+            (db.accounts || []).map(a => '<option value="' + E(a.id) + '">' + E(a.business) + ' — ' + E(a.email) + '</option>').join('') + '</select><div id="onlgHistBox" style="margin-top:.8rem"></div></div>';
+    };
+    const _panel = pfOwnerPanel;
+    pfOwnerPanel = function () {
+        _panel.apply(this, arguments);
+        const tabs = document.querySelector('#pfOwnerBody .pf-tabs'); if (!tabs || tabs.querySelector('[data-onlg="backup"]')) return;
+        const b = document.createElement('button'); b.className = 'pf-tab' + (pfOwner.tab === 'backup' ? ' on' : ''); b.setAttribute('data-onlg', 'backup'); b.textContent = 'Respaldo';
+        b.onclick = function () { pfOwnerTab('backup'); }; tabs.appendChild(b);
+    };
+
+    /* ---------- 4) Dentro del sistema de cada negocio: Análisis y Mis compras ---------- */
+    function addPages() {
+        const rep = $('reports'), link = document.querySelector('[data-page="reports"]'); if (!rep || !link || $('analysis')) return;
+        const li = link.closest('li');
+        const mk = (p, ic, t) => { const x = document.createElement('li'); x.innerHTML = '<a onclick="showPage(\'' + p + '\')" class="nav-link" data-page="' + p + '"><i class="fas ' + ic + '"></i> ' + t + '</a>'; return x; };
+        li.insertAdjacentElement('afterend', mk('purchases', 'fa-receipt', 'Mis compras')); li.insertAdjacentElement('afterend', mk('analysis', 'fa-chart-line', 'Análisis'));
+        ['analysis', 'purchases'].forEach(p => { const d = document.createElement('div'); d.id = p; d.className = 'page'; rep.insertAdjacentElement('afterend', d); });
+    }
+    const _bp = blockedPagesFor;
+    blockedPagesFor = function (r) { const b = _bp(r).slice(); if (r !== 'admin') { b.push('purchases'); if (r !== 'manager') b.push('analysis'); } return b; };
+    const _sp = showPage;
+    showPage = function (p) {
+        if (p !== 'analysis' && p !== 'purchases') return _sp.apply(this, arguments);
+        addPages();
+        if (currentUser && blockedPagesFor(currentUser.role).includes(p)) { alert('No tienes permiso para acceder a esta sección'); return _sp('dashboard'); }
+        document.querySelectorAll('.page').forEach(x => x.classList.remove('active')); $(p).classList.add('active');
+        document.querySelectorAll('.nav-link').forEach(x => x.classList.remove('active')); const l = document.querySelector('[data-page="' + p + '"]'); if (l) l.classList.add('active');
+        $('pageTitle').innerHTML = p === 'analysis' ? '<i class="fas fa-chart-line"></i> Análisis de mi negocio' : '<i class="fas fa-receipt"></i> Mis compras';
+        closeSidebar(); (p === 'analysis' ? renderAnalysis : renderPurchases)(); const m = document.querySelector('.main'); if (m) m.scrollTo({ top: 0 });
+    };
+    document.addEventListener('DOMContentLoaded', () => setTimeout(addPages, 600)); setTimeout(addPages, 1500);
+
+    const box = 'background:#fff;border:1px solid var(--border,#e5e7eb);border-radius:14px;padding:1rem;margin-bottom:1rem';
+    async function renderPurchases() {
+        const el = $('purchases'); el.innerHTML = '<p>Cargando…</p>';
+        const t = sessionStorage.getItem('activeTenant'); let list = [];
+        try { await sbReady(); const r = await cloud().from('payments').select('*').eq('tenant_id', t).order('created_at', { ascending: false }); if (!r.error) list = (r.data || []).map(rowPay); } catch (e) {}
+        if (!list.length) { try { list = pfDB().payments.filter(p => p.accId === t).sort((x, y) => new Date(y.at) - new Date(x.at)); } catch (e) {} }
+        const ok = list.filter(p => p.status === 'approved'), tot = ok.reduce((n, p) => n + (typeof pfPaymentLps === 'function' ? pfPaymentLps(p) : Number(p.price || 0)), 0);
+        el.innerHTML = '<div style="' + box + '"><h3 style="margin-top:0">Historial de compras en ONLG</h3><p>Compras aprobadas: <b>' + ok.length + '</b> · Total pagado: <b>' + (typeof pfL === 'function' ? pfL(tot) : tot) + '</b></p>' +
+            (list.length ? '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse"><tr style="text-align:left;background:#eff6ff"><th style="padding:8px">Fecha</th><th>Recibo</th><th>Plan</th><th>Monto</th><th>Método</th><th>Estado</th></tr>' +
+                list.map(p => '<tr style="border-bottom:1px solid #e5e7eb"><td style="padding:8px">' + new Date(p.at).toLocaleDateString('es-HN') + '</td><td>' + E(p.receiptNo || '—') + '</td><td>' + E(p.months) + ' mes(es)</td><td>' + pfAmtPay(p) + '</td><td>' + E(p.method || '') + '</td><td>' + stName(p.status) + '</td></tr>').join('') + '</table></div>' : '<p>Todavía no tienes compras registradas.</p>') +
+            '<p style="color:#64748b;font-size:.85rem">Este historial es solo de consulta. Únicamente el administrador de ONLG puede eliminar registros.</p></div>';
+    }
+
+    const charts = {};
+    const MES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'], DIA = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+    function draw(id, cfg) { const c = $(id); if (!c || typeof Chart === 'undefined') return; if (charts[id]) charts[id].destroy(); charts[id] = new Chart(c, cfg); }
+    window.renderAnalysis = function (yr) {
+        const el = $('analysis'); const S = (appData.sales || []).filter(s => s && s.date && isFinite(Number(s.total)));
+        if (typeof Chart === 'undefined') { el.innerHTML = '<div style="' + box + '">Las gráficas necesitan internet para cargar. Revisa tu conexión y entra de nuevo.</div>'; return; }
+        if (!S.length) { el.innerHTML = '<div style="' + box + '"><h3 style="margin-top:0">Aún no hay ventas</h3><p>Cuando registres ventas en <b>Nueva Venta</b>, aquí verás cómo te va por mes y por año, y qué puedes mejorar.</p></div>'; return; }
+        const years = [...new Set(S.map(s => new Date(s.date).getFullYear()))].sort((a, b) => a - b); yr = Number(yr) || years[years.length - 1];
+        const tot = s => Number(s.total) || 0, inY = S.filter(s => new Date(s.date).getFullYear() === yr);
+        const byM = Array(12).fill(0), cntM = Array(12).fill(0); inY.forEach(s => { const m = new Date(s.date).getMonth(); byM[m] += tot(s); cntM[m]++; });
+        const byY = years.map(y => S.filter(s => new Date(s.date).getFullYear() === y).reduce((n, s) => n + tot(s), 0));
+        const byD = Array(7).fill(0); inY.forEach(s => byD[new Date(s.date).getDay()] += tot(s));
+        const now = new Date(), cm = now.getMonth(), cy = now.getFullYear(), pm = cm === 0 ? 11 : cm - 1, py = cm === 0 ? cy - 1 : cy;
+        const sumMonth = (y, m) => S.filter(s => { const d = new Date(s.date); return d.getFullYear() === y && d.getMonth() === m; }).reduce((n, s) => n + tot(s), 0);
+        const thisM = sumMonth(cy, cm), lastM = sumMonth(py, pm), yearTot = byM.reduce((a, b) => a + b, 0), nSales = inY.length, avg = nSales ? yearTot / nSales : 0;
+        const prod = {}; inY.forEach(s => (s.items || []).forEach(i => { const k = i.name || 'Producto'; const p = prod[k] || (prod[k] = { q: 0, rev: 0, cost: 0 }); const q = Number(i.quantity) || 0; p.q += q; p.rev += q * (Number(i.price) || 0) - (Number(i.discount) || 0); p.cost += q * (Number(i.costPrice) || 0); }));
+        const top = Object.entries(prod).sort((a, b) => b[1].rev - a[1].rev).slice(0, 6);
+        const gain = Object.values(prod).reduce((n, p) => n + p.rev - p.cost, 0), rev = Object.values(prod).reduce((n, p) => n + p.rev, 0), margin = rev ? gain / rev * 100 : 0;
+        const credit = inY.filter(s => s.paid === false).reduce((n, s) => n + tot(s), 0);
+
+        /* ---- Qué mejorar (reglas simples basadas en tus propios datos) ---- */
+        const tips = [];
+        const best = byM.indexOf(Math.max(...byM)), activeM = byM.map((v, i) => [v, i]).filter(x => x[0] > 0), worst = activeM.length > 1 ? activeM.sort((a, b) => a[0] - b[0])[0][1] : -1;
+        if (yr === cy && lastM > 0) { const ch = (thisM - lastM) / lastM * 100; tips.push(ch >= 0 ? '📈 Este mes vas ' + ch.toFixed(0) + '% arriba del mes pasado. Mantén lo que estás haciendo.' : '📉 Este mes vas ' + Math.abs(ch).toFixed(0) + '% abajo del mes pasado (aún puede cambiar si el mes no ha terminado). Prueba una promoción en Promos y Campañas.'); }
+        if (worst >= 0 && worst !== best) tips.push('🗓️ Tu mes más flojo fue ' + MES[worst] + ' y el mejor ' + MES[best] + '. Prepara ofertas y más inventario antes de tus meses fuertes, y promociones en los flojos.');
+        const dmin = byD.indexOf(Math.min(...byD)), dmax = byD.indexOf(Math.max(...byD)); if (byD[dmax] > 0 && dmin !== dmax) tips.push('📅 Vendes más los ' + DIA[dmax] + ' y menos los ' + DIA[dmin] + '. Haz una oferta ese día flojo para empujar las ventas.');
+        if (margin && margin < 15) tips.push('💰 Tu ganancia sobre lo vendido es de ' + margin.toFixed(1) + '%, es baja. Revisa precios de venta o negocia mejor con tus proveedores.');
+        else if (margin) tips.push('💰 Tu ganancia estimada sobre lo vendido es de ' + margin.toFixed(1) + '%.');
+        if (yearTot && credit / yearTot > 0.25) tips.push('🧾 El ' + (credit / yearTot * 100).toFixed(0) + '% de tus ventas del año está a crédito sin cobrar. Cobra los fiados para no quedarte sin efectivo.');
+        const low = (appData.products || []).filter(p => Number(p.stock) <= Number(p.minStock || 0)); if (low.length) tips.push('📦 Tienes ' + low.length + ' producto(s) con stock bajo (' + low.slice(0, 3).map(p => E(p.name)).join(', ') + (low.length > 3 ? '…' : '') + '). Resurtir a tiempo evita perder ventas.');
+        const sold = new Set(); S.filter(s => now - new Date(s.date) < 60 * 864e5).forEach(s => (s.items || []).forEach(i => sold.add(i.productId))); const still = (appData.products || []).filter(p => Number(p.stock) > 0 && !sold.has(p.id)); if (still.length) tips.push('🐌 ' + still.length + ' producto(s) no se han vendido en 60 días (' + still.slice(0, 3).map(p => E(p.name)).join(', ') + (still.length > 3 ? '…' : '') + '). Ponlos en promoción o deja de comprarlos.');
+        if (!tips.length) tips.push('✅ Todo se ve estable. Sigue registrando tus ventas para tener recomendaciones más precisas.');
+
+        const kpi = (t, v) => '<div style="' + box + ';margin:0"><div style="color:#64748b;font-size:.85rem">' + t + '</div><div style="font-size:1.35rem;font-weight:800">' + v + '</div></div>';
+        el.innerHTML = '<div style="display:flex;gap:.6rem;align-items:center;margin-bottom:1rem"><label for="anYear"><b>Año</b></label><select id="anYear" onchange="renderAnalysis(this.value)">' + years.map(y => '<option' + (y === yr ? ' selected' : '') + '>' + y + '</option>').join('') + '</select></div>' +
+            '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:.8rem;margin-bottom:1rem">' + kpi('Ventas del año ' + yr, formatMoney(yearTot)) + kpi('Número de ventas', nSales) + kpi('Venta promedio', formatMoney(avg)) + kpi('Mes actual', formatMoney(thisM)) + '</div>' +
+            '<div style="' + box + '"><h3 style="margin-top:0">¿Qué puedo mejorar?</h3><ul style="margin:0;padding-left:1.2rem;line-height:1.7">' + tips.map(t => '<li>' + t + '</li>').join('') + '</ul></div>' +
+            '<div style="' + box + '"><h3 style="margin-top:0">Ventas por mes (' + yr + ')</h3><div style="height:280px"><canvas id="anM"></canvas></div></div>' +
+            '<div style="' + box + '"><h3 style="margin-top:0">Ventas por año</h3><div style="height:240px"><canvas id="anY"></canvas></div></div>' +
+            '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1rem"><div style="' + box + '"><h3 style="margin-top:0">Productos que más venden</h3><div style="height:260px"><canvas id="anP"></canvas></div></div><div style="' + box + '"><h3 style="margin-top:0">Ventas por día de la semana</h3><div style="height:260px"><canvas id="anD"></canvas></div></div></div>';
+        const fm = v => formatMoney(v), base = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => fm(c.parsed.y != null ? c.parsed.y : c.parsed.x) } } } };
+        draw('anM', { type: 'bar', data: { labels: MES, datasets: [{ data: byM, backgroundColor: byM.map((v, i) => i === best ? '#10b981' : '#3b82f6'), borderRadius: 6 }] }, options: base });
+        draw('anY', { type: 'line', data: { labels: years.map(String), datasets: [{ data: byY, borderColor: '#1e40af', backgroundColor: 'rgba(30,64,175,.12)', fill: true, tension: .3 }] }, options: base });
+        draw('anP', { type: 'bar', data: { labels: top.map(x => x[0].slice(0, 18)), datasets: [{ data: top.map(x => x[1].rev), backgroundColor: '#f59e0b', borderRadius: 6 }] }, options: Object.assign({}, base, { indexAxis: 'y' }) });
+        draw('anD', { type: 'bar', data: { labels: DIA, datasets: [{ data: byD, backgroundColor: '#8b5cf6', borderRadius: 6 }] }, options: base });
+    };
+})();
+</script>
+
 </body>
 </html>
+
