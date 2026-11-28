@@ -11827,32 +11827,107 @@ pfProceed = async function (acc) {
         sessionStorage.setItem('pfSetPw', '1');
         pfOtpView.type = 'email'; pfOtpView(mail);
         const h = document.querySelector('#pfOtp h3'), p = document.querySelector('#pfOtp p');
+        const oc = document.getElementById('pfOtp');
+        if (oc && !oc.querySelector('.pf-rec-ico')) { oc.classList.add('pf-recover'); oc.insertAdjacentHTML('afterbegin', '<div class="pf-rec-ico"><i class="fas fa-envelope-open-text"></i></div>'); if (typeof pwDialogCss === 'function') pwDialogCss(); }
         if (h) h.textContent = 'Revisa tu correo';
         if (p) p.innerHTML = 'Te enviamos un código a <b>' + mail.replace(/[<>&]/g, '') + '</b>. Escríbelo para entrar y crear tu contraseña.';
     };
 
     // 4) Al entrar con ese código, pedir la contraseña nueva
+    function pwDialogCss() {
+        if (!document.getElementById('pfSetPwCss')) {
+            const st = document.createElement('style'); st.id = 'pfSetPwCss';
+            st.textContent = '#pfSetPw{position:fixed;inset:0;background:rgba(10,20,50,.55);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:99999;display:flex;align-items:center;justify-content:center;padding:1rem;animation:spwFade .25s ease}' +
+                '#pfSetPw *{box-sizing:border-box}' +
+                '#pfSetPw .spw-card{background:#fff;border-radius:24px;max-width:420px;width:100%;max-height:94vh;overflow:auto;box-shadow:0 30px 80px rgba(8,25,70,.45);animation:spwUp .35s cubic-bezier(.2,.9,.3,1.2)}' +
+                '#pfSetPw .spw-head{background:linear-gradient(135deg,#0b5ed7,#0a3b9c 70%,#1e293b);color:#fff;text-align:center;padding:1.7rem 1.4rem 1.5rem;border-radius:24px 24px 0 0;position:relative}' +
+                '#pfSetPw .spw-ico{width:62px;height:62px;border-radius:50%;background:rgba(255,255,255,.18);border:2px solid rgba(255,255,255,.45);display:flex;align-items:center;justify-content:center;margin:0 auto .7rem;font-size:1.5rem}' +
+                '#pfSetPw .spw-head h3{margin:0 0 .25rem;font-size:1.3rem;font-weight:800}' +
+                '#pfSetPw .spw-head p{margin:0;font-size:.88rem;opacity:.88;line-height:1.35}' +
+                '#pfSetPw .spw-body{padding:1.3rem 1.4rem 1.4rem}' +
+                '#pfSetPw label{display:block;font-size:.8rem;font-weight:700;color:#334155;margin:0 0 .3rem}' +
+                '#pfSetPw .spw-f{position:relative;margin-bottom:.85rem}' +
+                '#pfSetPw .spw-f>i.spw-l{position:absolute;left:.95rem;top:50%;transform:translateY(-50%);color:#7c93bd;font-size:.95rem;pointer-events:none}' +
+                '#pfSetPw .spw-f input{width:100%;padding:.8rem 2.9rem .8rem 2.6rem;border:1.5px solid #cfdcf5;border-radius:14px;font-size:1rem;background:#f6f9ff;outline:none;transition:.2s;color:#0f172a}' +
+                '#pfSetPw .spw-f input:focus{border-color:#0b5ed7;background:#fff;box-shadow:0 0 0 4px #0b5ed726}' +
+                '#pfSetPw .spw-f.ok input{border-color:#16a34a;background:#f0fdf4}' +
+                '#pfSetPw .spw-f.bad input{border-color:#dc2626;background:#fef2f2}' +
+                '#pfSetPw .spw-eye{position:absolute;right:.35rem;top:50%;transform:translateY(-50%);width:38px;height:38px;border:0;background:none;border-radius:10px;cursor:pointer;color:#52689a;font-size:1rem;transition:.15s}' +
+                '#pfSetPw .spw-eye:hover{background:#e6eeff;color:#0b5ed7}' +
+                '#pfSetPw .spw-bar{height:7px;background:#e2e8f0;border-radius:9px;overflow:hidden;margin:-.2rem 0 .35rem}' +
+                '#pfSetPw .spw-bar>div{height:100%;width:0;border-radius:9px;transition:width .3s,background .3s}' +
+                '#pfSetPw .spw-lvl{font-size:.78rem;font-weight:700;margin-bottom:.55rem;min-height:1.1em;color:#64748b}' +
+                '#pfSetPw .spw-req{display:flex;flex-wrap:wrap;gap:.35rem;margin-bottom:1rem}' +
+                '#pfSetPw .spw-req span{font-size:.74rem;padding:.25rem .6rem;border-radius:99px;background:#eef2f9;color:#64748b;font-weight:600;transition:.2s}' +
+                '#pfSetPw .spw-req span.on{background:#dcfce7;color:#166534}' +
+                '#pfSetPw .spw-req span i{margin-right:.25rem;font-size:.68rem}' +
+                '#pfSetPw .spw-msg{font-size:.84rem;min-height:1.2em;margin:.1rem 0 .7rem;font-weight:600;color:#dc2626}' +
+                '#pfSetPw .spw-msg.ok{color:#166534}' +
+                '#pfSetPw .spw-btn{width:100%;padding:.85rem;border:0;border-radius:14px;font-size:1rem;font-weight:800;cursor:pointer;background:linear-gradient(135deg,#0b5ed7,#0a3b9c);color:#fff;box-shadow:0 8px 20px #0b5ed744;transition:transform .15s,box-shadow .15s}' +
+                '#pfSetPw .spw-btn:hover{transform:translateY(-1px);box-shadow:0 12px 26px #0b5ed755}' +
+                '#pfSetPw .spw-btn:disabled{opacity:.6;cursor:wait;transform:none}' +
+                '#pfSetPw .spw-btn.alt{background:#fff;color:#0a3b9c;border:1.5px solid #bcd3ff;box-shadow:none;margin-top:.55rem;font-weight:700}' +
+                '#pfSetPw .spw-done{text-align:center;padding:.4rem 0 .2rem}' +
+                '#pfSetPw .spw-done .spw-ck{width:72px;height:72px;border-radius:50%;background:#dcfce7;color:#16a34a;display:flex;align-items:center;justify-content:center;font-size:2rem;margin:0 auto .8rem;animation:spwPop .45s cubic-bezier(.2,1.4,.4,1)}' +
+                '#pfSetPw .spw-done h3{margin:0 0 .3rem;font-size:1.25rem;color:#0f172a}' +
+                '#pfSetPw .spw-done p{margin:0 0 1.1rem;color:#475569;font-size:.92rem}' +
+                '@keyframes spwFade{from{opacity:0}to{opacity:1}}@keyframes spwUp{from{opacity:0;transform:translateY(24px) scale(.96)}to{opacity:1;transform:none}}@keyframes spwPop{from{transform:scale(.3)}to{transform:scale(1)}}' +
+                '#pfOtp.pf-recover .pf-rec-ico{width:70px;height:70px;border-radius:50%;background:linear-gradient(135deg,#0b5ed7,#0a3b9c);color:#fff;display:flex;align-items:center;justify-content:center;margin:0 auto .7rem;font-size:1.6rem;box-shadow:0 10px 24px #0b5ed755}' +
+                '#pfOtp.pf-recover .pf-authlogo{display:none}' +
+                '#pfOtp.pf-recover input{background:#f6f9ff;border:1.5px solid #cfdcf5;border-radius:16px;padding:.8rem}' +
+                '#pfOtp.pf-recover input:focus{border-color:#0b5ed7;box-shadow:0 0 0 4px #0b5ed726;outline:none}';
+            document.head.appendChild(st);
+        }
+    }
     function pwDialog() {
         if (document.getElementById('pfSetPw')) return;
+        pwDialogCss();
+        const field = (id, label, ph) => '<label for="' + id + '">' + label + '</label><div class="spw-f" id="' + id + 'W"><i class="fas fa-lock spw-l"></i>' +
+            '<input type="password" id="' + id + '" placeholder="' + ph + '" autocomplete="new-password"><button type="button" class="spw-eye" data-for="' + id + '" aria-label="Mostrar u ocultar contraseña" title="Ver contraseña"><i class="fas fa-eye"></i></button></div>';
         const d = document.createElement('div'); d.id = 'pfSetPw';
-        d.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,.6);z-index:99999;display:flex;align-items:center;justify-content:center;padding:1rem';
-        d.innerHTML = '<div style="background:#fff;border-radius:18px;padding:1.4rem;max-width:400px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3)">' +
-            '<h3 style="margin:0 0 .4rem">Crea tu contraseña</h3><p style="margin:0 0 .8rem;color:#475569;font-size:.9rem">Así podrás entrar con correo y contraseña además de Google.</p>' +
-            '<input type="password" id="spw1" placeholder="Contraseña nueva" autocomplete="new-password" style="width:100%;margin-bottom:.5rem">' +
-            '<input type="password" id="spw2" placeholder="Repite la contraseña" autocomplete="new-password" style="width:100%">' +
-            '<p id="spwMsg" style="color:#dc2626;font-size:.85rem;min-height:1.2em;margin:.5rem 0"></p>' +
-            '<button class="pf-btn" style="width:100%" id="spwOk">Guardar contraseña</button>' +
-            '<button class="pf-btn alt" style="width:100%;margin-top:.5rem" id="spwNo">Ahora no</button></div>';
+        d.innerHTML = '<div class="spw-card"><div class="spw-head"><div class="spw-ico"><i class="fas fa-key"></i></div><h3>Crea tu contraseña</h3>' +
+            '<p>Así podrás entrar con correo y contraseña además de Google.</p></div><div class="spw-body">' +
+            field('spw1', 'Contraseña nueva', 'Escribe tu contraseña') +
+            '<div class="spw-bar"><div id="spwBar"></div></div><div class="spw-lvl" id="spwLvl">Escribe una contraseña</div>' +
+            '<div class="spw-req" id="spwReq"><span data-r="len"><i class="fas fa-circle"></i>12+ caracteres</span><span data-r="low"><i class="fas fa-circle"></i>minúscula</span><span data-r="up"><i class="fas fa-circle"></i>MAYÚSCULA</span><span data-r="num"><i class="fas fa-circle"></i>número</span><span data-r="sym"><i class="fas fa-circle"></i>símbolo</span></div>' +
+            field('spw2', 'Repite la contraseña', 'Vuelve a escribirla') +
+            '<p class="spw-msg" id="spwMsg"></p>' +
+            '<button class="spw-btn" id="spwOk"><i class="fas fa-shield-halved"></i> Guardar contraseña</button>' +
+            '<button class="spw-btn alt" id="spwNo">Ahora no</button></div></div>';
         document.body.appendChild(d);
-        const msg = t => { document.getElementById('spwMsg').textContent = t; };
-        document.getElementById('spwNo').onclick = () => d.remove();
-        document.getElementById('spwOk').onclick = async () => {
-            const a = document.getElementById('spw1').value, b = document.getElementById('spw2').value;
+        const $s = id => document.getElementById(id);
+        const msg = (t, ok) => { const m = $s('spwMsg'); m.textContent = t || ''; m.className = 'spw-msg' + (ok ? ' ok' : ''); };
+        // Vista previa de contraseña (ojo)
+        d.querySelectorAll('.spw-eye').forEach(b => b.onclick = () => {
+            const i = $s(b.dataset.for), show = i.type === 'password'; i.type = show ? 'text' : 'password';
+            b.innerHTML = '<i class="fas fa-eye' + (show ? '-slash' : '') + '"></i>'; b.title = show ? 'Ocultar contraseña' : 'Ver contraseña'; i.focus();
+        });
+        // Medidor de fuerza + requisitos + coincidencia
+        function check() {
+            const a = $s('spw1').value, b = $s('spw2').value;
+            const r = { len: a.length >= 12, low: /[a-z]/.test(a), up: /[A-Z]/.test(a), num: /\d/.test(a), sym: /[^A-Za-z0-9]/.test(a) };
+            d.querySelectorAll('#spwReq span').forEach(s => { const on = r[s.dataset.r]; s.className = on ? 'on' : ''; s.querySelector('i').className = 'fas fa-' + (on ? 'check' : 'circle'); });
+            const n = Object.values(r).filter(Boolean).length, bad = a ? pfPwErrors(a, {}) : [];
+            const lv = !a ? 0 : bad.length === 0 ? 5 : Math.min(n, 4);
+            const cols = ['#e2e8f0', '#dc2626', '#f97316', '#f59e0b', '#84cc16', '#16a34a'], names = ['Escribe una contraseña', 'Muy débil', 'Débil', 'Regular', 'Casi lista', 'Muy segura ✔'];
+            $s('spwBar').style.width = (lv / 5 * 100) + '%'; $s('spwBar').style.background = cols[lv];
+            $s('spwLvl').textContent = names[lv]; $s('spwLvl').style.color = lv ? cols[lv] : '#64748b';
+            const w2 = $s('spw2W'); w2.className = 'spw-f' + (b ? (a === b ? ' ok' : ' bad') : '');
+            if (b) msg(a === b ? 'Las contraseñas coinciden ✔' : 'Las contraseñas no coinciden.', a === b); else msg('');
+        }
+        $s('spw1').addEventListener('input', check); $s('spw2').addEventListener('input', check);
+        $s('spw2').addEventListener('keydown', e => { if (e.key === 'Enter') $s('spwOk').click(); });
+        setTimeout(() => $s('spw1').focus(), 80);
+        $s('spwNo').onclick = () => d.remove();
+        $s('spwOk').onclick = async () => {
+            const a = $s('spw1').value, b = $s('spw2').value;
             const er = pfPwErrors(a, {}); if (er.length) return msg('Falta: ' + er.join(', ') + '.');
             if (a !== b) return msg('Las contraseñas no coinciden.');
+            const btn = $s('spwOk'); btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando…';
             const r = await cloud().auth.updateUser({ password: a });
-            if (r.error) return msg(pfSbErr(r.error));
-            d.querySelector('div').innerHTML = '<h3>Listo ✔</h3><p>Ya puedes entrar con tu correo y contraseña.</p><button class="pf-btn" style="width:100%" onclick="this.closest(\'#pfSetPw\').remove()">Continuar</button>';
+            if (r.error) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-shield-halved"></i> Guardar contraseña'; return msg(pfSbErr(r.error)); }
+            d.querySelector('.spw-card').innerHTML = '<div class="spw-body"><div class="spw-done"><div class="spw-ck"><i class="fas fa-check"></i></div><h3>¡Listo!</h3><p>Ya puedes entrar con tu correo y contraseña.</p>' +
+                '<button class="spw-btn" onclick="this.closest(\'#pfSetPw\').remove()">Continuar</button></div></div>';
         };
     }
     const _proc = window.pfProceed;
