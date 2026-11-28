@@ -7759,7 +7759,7 @@ const PLATFORM_CONFIG = {
   paypalClientId: 'AYKXA-wmZ-XGhiMoRimAMq-gDWP2DzTS_iQvgesEXVbncMELw91sAqrQ61kCFx2e8tT4zgup-tOrQC1g',// Cliente ID de PayPal (developer.paypal.com)
   googlePay: { environment:'TEST', merchantId:'', gateway:'', gatewayMerchantId:'' },
   currency: 'USD',
-  bankAccounts: [],  // cuentas de banco quitadas por ahora; para volver a usarlas agrega {bank:'',holder:'',account:'',type:''}
+  bankAccounts: [],  // método de pago por banco eliminado
   lpsRate: 26.5,   /* lempiras por 1 USD (solo para mostrar el aproximado) */
   turnstileSiteKey: '',   /* Cloudflare Turnstile (anti-bots). Vacio = sin captcha */
   plans: [
@@ -7846,11 +7846,7 @@ function pfCashier(){ const c=gid('cashCode').value.trim().toUpperCase(); const 
 async function pfEnter(acc,mode){ sessionStorage.setItem('activeTenant',acc.id); sessionStorage.setItem('tenantMode',mode); sessionStorage.removeItem('currentUser'); try{await cloudPull(acc.id);}catch(e){} location.reload(); }
 
 function pfChoose(id){ pfPlan=PLATFORM_CONFIG.plans.find(p=>p.id===id); const b=PLATFORM_CONFIG.bank, box=gid('pfPay'); box.style.display='block';
-  box.innerHTML='<h3>Pagar '+pfPlan.name+' — $'+pfPlan.price+' '+PLATFORM_CONFIG.currency+'</h3><button class="pf-btn" style="width:100%;margin:.3rem 0" onclick="pfBankForm()"><i class="fas fa-building-columns"></i> Cuenta de banco</button><button class="pf-btn" style="width:100%;margin:.3rem 0" onclick="pfPaypal()"><i class="fab fa-paypal"></i> PayPal</button><button class="pf-btn" style="width:100%;margin:.3rem 0" onclick="pfGPay()"><i class="fab fa-google-pay"></i> Google Pay</button><div id="payArea"></div>'; box.scrollIntoView({behavior:'smooth'}); }
-function pfBankForm(){ const b=PLATFORM_CONFIG.bank; gid('payArea').innerHTML='<p style="font-size:.9rem">Deposita a:<br><b>'+escapeHtml(b.name)+'</b> · '+escapeHtml(b.type)+'<br>Titular: '+escapeHtml(b.holder)+'<br>Cuenta: <b>'+escapeHtml(b.account)+'</b><br>Referencia: <b>'+pfAcc.code+'</b></p><label>Sube la foto del comprobante</label><input type="file" id="rcpt" accept="image/*"><button class="pf-btn" style="width:100%" onclick="pfSendReceipt()">Enviar comprobante</button>'; }
-function pfSendReceipt(){ const f=gid('rcpt').files[0]; if(!f) return pfMsg('Sube la foto del comprobante.'); if(f.size>1500000) return pfMsg('La imagen pesa más de 1.5 MB.');
-  const r=new FileReader(); r.onload=()=>{ const db=pfDB(); db.payments.push({id:'p'+Date.now(),accId:pfAcc.id,plan:pfPlan.id,months:pfPlan.months,price:pfPlan.price, priceLps: pfPlan.lps,method:'Banco',status:'pending',receipt:r.result,at:new Date().toISOString()}); pfSave(db);
-    gid('payArea').innerHTML='<p style="color:#166534"><b>Comprobante enviado.</b> Cuando el propietario lo verifique, tu membresía se activa y podrás entrar con tu correo y contraseña.</p>'; }; r.readAsDataURL(f); }
+  box.innerHTML='<h3>Pagar '+pfPlan.name+' — $'+pfPlan.price+' '+PLATFORM_CONFIG.currency+'</h3><button class="pf-btn" style="width:100%;margin:.3rem 0" onclick="pfPaypal()"><i class="fab fa-paypal"></i> PayPal</button><button class="pf-btn" style="width:100%;margin:.3rem 0" onclick="pfGPay()"><i class="fab fa-google-pay"></i> Google Pay</button><div id="payArea"></div>'; box.scrollIntoView({behavior:'smooth'}); }
 function pfPaid(method){ const db=pfDB(), a=db.accounts.find(x=>x.id===pfAcc.id); pfExtend(a,pfPlan.months); db.payments.push({id:'p'+Date.now(),accId:a.id,plan:pfPlan.id,months:pfPlan.months,price:pfPlan.price, priceLps: pfPlan.lps,method,status:'approved',at:new Date().toISOString()}); pfSave(db); pfEnter(a,'owner'); }
 function pfExtend(a,m){ const d=pfActive(a)?new Date(a.expiresAt):new Date(); d.setMonth(d.getMonth()+m); a.expiresAt=d.toISOString(); }
 function pfPaypal(){ const c=PLATFORM_CONFIG; if(!c.paypalClientId) return pfMsg('PayPal aún no está configurado (paypalClientId en PLATFORM_CONFIG).'); gid('payArea').innerHTML='<div id="ppBox"></div>';
@@ -7895,24 +7891,8 @@ function pfPlanCard(p,act,label){
 function pfSel(b){ [...b.parentNode.children].forEach(x=>x.classList.remove('on')); b.classList.add('on'); }
 function pfChoose(id){
   pfPlan=PLATFORM_CONFIG.plans.find(p=>p.id===id); const box=gid('pfPay'); box.style.display='block';
-  box.innerHTML='<div class="pf-sum"><div><small>Plan elegido</small><b>'+pfPlan.name+'</b></div><div style="text-align:right"><small>Total a pagar</small><b>'+pfAmt(pfPlan)+'</b><br><small>≈ $'+pfFmt(pfPlan.price)+' USD (PayPal)</small></div></div><h4 class="pf-h">¿Cómo quieres pagar?</h4><div class="pf-methods"><button class="pf-m" onclick="pfSel(this);pfBankForm()"><i class="fas fa-building-columns"></i><span>Cuenta de banco</span><small>Depósito o transferencia</small></button><button class="pf-m" onclick="pfSel(this);pfPaypal()"><i class="fab fa-paypal"></i><span>PayPal</span><small>Tarjeta o saldo</small></button>'+(PLATFORM_CONFIG.googlePay.merchantId?'<button class="pf-m" onclick="pfSel(this);pfGPay()"><i class="fab fa-google-pay"></i><span>Google Pay</span><small>Pago rápido</small></button>':'')+'</div><div id="payArea"></div><p class="pf-lock"><i class="fas fa-lock"></i> Tu membresía se activa al confirmar el pago.</p>';
+  box.innerHTML='<div class="pf-sum"><div><small>Plan elegido</small><b>'+pfPlan.name+'</b></div><div style="text-align:right"><small>Total a pagar</small><b>'+pfAmt(pfPlan)+'</b><br><small>≈ $'+pfFmt(pfPlan.price)+' USD (PayPal)</small></div></div><h4 class="pf-h">¿Cómo quieres pagar?</h4><div class="pf-methods"><button class="pf-m" onclick="pfSel(this);pfPaypal()"><i class="fab fa-paypal"></i><span>PayPal</span><small>Tarjeta o saldo</small></button>'+(PLATFORM_CONFIG.googlePay.merchantId?'<button class="pf-m" onclick="pfSel(this);pfGPay()"><i class="fab fa-google-pay"></i><span>Google Pay</span><small>Pago rápido</small></button>':'')+'</div><div id="payArea"></div><p class="pf-lock"><i class="fas fa-lock"></i> Tu membresía se activa al confirmar el pago.</p>';
   box.scrollIntoView({behavior:'smooth'});
-}
-function pfBankForm(){
-  const L=PLATFORM_CONFIG.bankAccounts;
-  gid('payArea').innerHTML='<label class="pf-l">1. Banco donde vas a depositar</label><select id="bkTo" onchange="pfBankInfo()">'+L.map((b,i)=>'<option value="'+i+'">'+escapeHtml(b.bank)+'</option>').join('')+'</select><div id="bkInfo" class="pf-info"></div><label class="pf-l">2. ¿Desde qué banco pagaste?</label><select id="bkFrom">'+HN_BANKS.map(b=>'<option>'+b+'</option>').join('')+'</select><label class="pf-l">3. Número de referencia o transacción</label><input id="bkRef" placeholder="Ej: 123456789"><label class="pf-l">4. Foto del comprobante</label><input type="file" id="rcpt" accept="image/*"><button class="pf-btn pf-full" onclick="pfSendReceipt()"><i class="fas fa-paper-plane"></i> Enviar comprobante</button>';
-  pfBankInfo();
-}
-function pfBankInfo(){
-  const b=PLATFORM_CONFIG.bankAccounts[gid('bkTo').value]; const r=(k,v)=>'<div><span>'+k+'</span><b>'+v+'</b></div>';
-  gid('bkInfo').innerHTML=r('Banco',escapeHtml(b.bank))+r('Titular',escapeHtml(b.holder))+r('Cuenta',escapeHtml(b.account))+r('Tipo',escapeHtml(b.type))+r('Monto',pfAmt(pfPlan)+' (≈ $'+pfFmt(pfPlan.price)+' USD)')+r('Nota del depósito',pfAcc.code);
-}
-function pfSendReceipt(){
-  const f=gid('rcpt').files[0], ref=gid('bkRef').value.trim();
-  if(!ref) return pfMsg('Escribe el número de referencia.'); if(!f) return pfMsg('Sube la foto del comprobante.'); if(f.size>1500000) return pfMsg('La imagen pesa más de 1.5 MB.');
-  const to=PLATFORM_CONFIG.bankAccounts[gid('bkTo').value].bank, from=gid('bkFrom').value;
-  const r=new FileReader(); r.onload=()=>{ const db=pfDB(); db.payments.push({id:'p'+Date.now(),accId:pfAcc.id,plan:pfPlan.id,months:pfPlan.months,price:pfPlan.price, priceLps: pfPlan.lps,method:'Banco',bankTo:to,bankFrom:from,ref,status:'pending',receipt:r.result,at:new Date().toISOString()}); pfSave(db);
-    gid('payArea').innerHTML='<div class="pf-ok"><i class="fas fa-circle-check"></i><b>Comprobante enviado</b><p>Cuando verifiquemos tu pago, tu membresía se activa y podrás entrar con tu correo y contraseña.</p></div>'; }; r.readAsDataURL(f);
 }
 // ---- Propietario: nombre, correo (confirmado) y contraseña (doble)
 function pfOwner(){
@@ -8158,38 +8138,6 @@ function pfRevoke(id) {
     p.status = 'revoked'; pfSave(db); pfSweep(); pfOwnerPanel();
 }
 
-// Pago por banco: el cliente agrega su número de cuenta y, si el modo automático está activo, se aprueba al instante
-function pfBankForm() {
-    const L = PLATFORM_CONFIG.bankAccounts, auto = pfSet().autoApprove;
-    gid('payArea').innerHTML = '<label class="pf-l">1. Banco donde vas a depositar</label><select id="bkTo" onchange="pfBankInfo()">' + L.map((b, i) => '<option value="' + i + '">' + escapeHtml(b.bank) + '</option>').join('') + '</select><div id="bkInfo" class="pf-info"></div>' +
-        '<label class="pf-l">2. ¿Desde qué banco pagaste?</label><select id="bkFrom">' + HN_BANKS.map(b => '<option>' + b + '</option>').join('') + '</select>' +
-        '<label class="pf-l">3. Tu número de cuenta (desde la que pagaste)</label><input id="bkAcct" inputmode="numeric" placeholder="Ej: 2101 0000 1234" autocomplete="off">' +
-        '<label class="pf-l">4. Número de referencia o transacción</label><input id="bkRef" placeholder="Ej: 123456789">' +
-        '<label class="pf-l">5. Foto del comprobante</label><input type="file" id="rcpt" accept="image/*">' +
-        '<button class="pf-btn pf-full" onclick="pfSendReceipt()"><i class="fas fa-paper-plane"></i> ' + (auto ? 'Enviar y activar ahora' : 'Enviar comprobante') + '</button>' +
-        (auto ? '<p class="pf-lock"><i class="fas fa-bolt"></i> Tu membresía se activa automáticamente al enviar.</p>' : '');
-    pfBankInfo();
-}
-function pfSendReceipt() {
-    const f = gid('rcpt').files[0], ref = gid('bkRef').value.trim(), acct = gid('bkAcct').value.replace(/[\s-]/g, '');
-    if (!/^\d{6,20}$/.test(acct)) return pfMsg('Escribe tu número de cuenta (solo números, de 6 a 20 dígitos).');
-    if (ref.length < 4) return pfMsg('Escribe el número de referencia de la transacción.');
-    if (!f) return pfMsg('Sube la foto del comprobante.'); if (f.size > 1500000) return pfMsg('La imagen pesa más de 1.5 MB.');
-    const to = PLATFORM_CONFIG.bankAccounts[gid('bkTo').value].bank, from = gid('bkFrom').value;
-    const db0 = pfDB();
-    if (db0.payments.some(x => x.ref && x.ref.toLowerCase() === ref.toLowerCase() && x.bankTo === to && x.status !== 'rejected' && x.status !== 'revoked')) return pfMsg('Esa referencia ya fue usada en otro pago.');
-    const r = new FileReader(); r.onload = () => {
-        const db = pfDB(), a = db.accounts.find(x => x.id === pfAcc.id);
-        const p = { id: 'p' + Date.now(), accId: a.id, plan: pfPlan.id, months: pfPlan.months, price: pfPlan.price, priceLps: pfPlan.lps, method: 'Banco', bankTo: to, bankFrom: from, fromAccount: acct, ref, status: 'pending', receipt: r.result, at: new Date().toISOString() };
-        db.payments.push(p);
-        if (pfSet().autoApprove) {
-            pfApprove(db, p, true); pfSave(db);
-            gid('payArea').innerHTML = '<div class="pf-ok"><i class="fas fa-circle-check"></i><b>¡Pago recibido y membresía activada!</b><p>Recibo ' + p.receiptNo + ' · vence el ' + new Date(p.until).toLocaleDateString() + '</p><button class="pf-btn pf-full" onclick="pfEnter(pfDB().accounts.find(x=>x.id===\'' + a.id + '\'),\'owner\')">Entrar al sistema</button><button class="pf-btn alt pf-full" style="margin-top:.5rem" onclick="pfPrintPay(\'' + p.id + '\')">Ver mi recibo</button></div>';
-        } else {
-            pfSave(db); gid('payArea').innerHTML = '<div class="pf-ok"><i class="fas fa-circle-check"></i><b>Comprobante enviado</b><p>Cuando verifiquemos tu pago, tu membresía se activa.</p></div>';
-        }
-    }; r.readAsDataURL(f);
-}
 
 // Recibo de pago de la empresa (se imprime desde el panel del propietario)
 function pfShowDoc(html) {
@@ -8363,27 +8311,24 @@ function pfCashSave() {
     db.payments.push(p); pfApprove(db, p, false); pfSave(db); pfMsg('Pago registrado ✔', true); pfOwnerPanel(); pfShowDoc(pfReceiptHTML(p, a, db));
 }
 function pfTabSet(db) {
-    const s = pfSet(), B = (db.settings && db.settings.bankAccounts) || PLATFORM_CONFIG.bankAccounts, rows = [];
-    for (let i = 0; i < 4; i++) { const b = B[i] || {}; rows.push('<div style="display:grid;grid-template-columns:1fr 1fr;gap:.3rem"><input id="bk' + i + 'b" placeholder="Banco" value="' + escapeHtml(b.bank || '') + '"><input id="bk' + i + 'h" placeholder="Titular" value="' + escapeHtml(b.holder || '') + '"><input id="bk' + i + 'a" placeholder="Número de cuenta" value="' + escapeHtml(b.account || '') + '"><input id="bk' + i + 't" placeholder="Tipo (Ahorro/Cheques)" value="' + escapeHtml(b.type || '') + '"></div>'); }
+    const s = pfSet();
     return '<div class="pf-box" style="max-width:600px;margin:1rem 0"><h3><i class="fas fa-gear"></i> Ajustes</h3>' +
-        '<label class="pf-l"><input type="checkbox" id="sAuto" style="width:auto;margin-right:.4rem"' + (s.autoApprove ? ' checked' : '') + '>Aprobar automáticamente los pagos por banco</label><p style="font-size:.78rem;color:#64748b;margin:0 0 .8rem">Si está activo, la membresía empieza apenas el cliente envía cuenta, referencia y comprobante. Puedes revocar cualquier pago en la pestaña Pagos.</p>' +
-        '<label class="pf-l">Cancelar automáticamente cuando pasen estos días sin pagar</label><select id="sGrace">' + [[0, 'Al vencer el mes (0 días)'], [1, '1 día'], [3, '3 días'], [7, '7 días'], [15, '15 días'], [30, '30 días (1 mes)'], [60, '60 días (2 meses)'], [90, '90 días (3 meses)']].map(x => '<option value="' + x[0] + '"' + (x[0] === s.graceDays ? ' selected' : '') + '>' + x[1] + '</option>').join('') + '</select>' +
+                '<label class="pf-l">Cancelar automáticamente cuando pasen estos días sin pagar</label><select id="sGrace">' + [[0, 'Al vencer el mes (0 días)'], [1, '1 día'], [3, '3 días'], [7, '7 días'], [15, '15 días'], [30, '30 días (1 mes)'], [60, '60 días (2 meses)'], [90, '90 días (3 meses)']].map(x => '<option value="' + x[0] + '"' + (x[0] === s.graceDays ? ' selected' : '') + '>' + x[1] + '</option>').join('') + '</select>' +
         '<label class="pf-l">Nombre de la empresa en los recibos</label><input id="sComp" value="' + escapeHtml(s.company) + '">' +
         '<label class="pf-l">Logo de la empresa para los recibos (PNG o JPG)</label>' +
         (s.logo ? '<img src="' + s.logo + '" alt="Logo actual" style="display:block;max-width:130px;max-height:90px;object-fit:contain;margin:.4rem 0;border:1px solid #e2e8f0;border-radius:8px;padding:5px">' : '<p style="font-size:.8rem;color:#64748b">Todavía no hay logo cargado.</p>') +
         '<input type="file" id="sLogo" accept="image/png,image/jpeg,image/webp">' +
         '<small style="display:block;color:#64748b;margin:.25rem 0 .8rem">El logo de ONLG aparecerá en los recibos de pago en efectivo y membresía. Puedes reemplazarlo aquí.</small>' +
-        '<label class="pf-l">Cuentas bancarias donde recibes pagos</label>' + rows.join('') + '<button class="pf-btn pf-full" style="margin-top:.6rem" onclick="pfSetSave()">Guardar ajustes</button></div>' +
+        '<button class="pf-btn pf-full" style="margin-top:.6rem" onclick="pfSetSave()">Guardar ajustes</button></div>' +
         '<div class="pf-box" style="max-width:600px;margin:1rem 0"><h3><i class="fas fa-key"></i> Cambiar contraseña del administrador</h3><label class="pf-l">Contraseña actual</label>' + pfPassField('cpOld', 'Actual') + '<label class="pf-l">Nueva contraseña muy segura</label>' + pfPwField('cpNew', 'Nueva', true) + '<label class="pf-l">Confirmar</label>' + pfPassField('cpNew2', 'Repite') + '<button class="pf-btn pf-full" onclick="pfPwChange()">Cambiar contraseña</button></div>';
 }
 function pfSetSave() {
-    const db = pfDB(), B = []; for (let i = 0; i < 4; i++) { const b = gid('bk' + i + 'b').value.trim(), a = gid('bk' + i + 'a').value.trim(); if (b && a) B.push({ bank: b, holder: gid('bk' + i + 'h').value.trim(), account: a, type: gid('bk' + i + 't').value.trim() || 'Ahorro' }); }
-    if (!B.length) return pfMsg('Agrega al menos una cuenta bancaria.');
+    const db = pfDB();
     const keepLogo = (db.settings && db.settings.logo) || pfSet().logo || '';
     const file = (gid('sLogo') && gid('sLogo').files && gid('sLogo').files[0]) || null;
     const persist = logo => {
-        db.settings = { autoApprove: gid('sAuto').checked, graceDays: parseInt(gid('sGrace').value) || 0, company: gid('sComp').value.trim() || 'EMPRESA DE TECNOLOGIA ONLG', bankAccounts: B, logo: logo || keepLogo };
-        PLATFORM_CONFIG.bankAccounts = B; pfSave(db); pfSweep(); pfMsg('Ajustes guardados ✔', true); pfOwnerPanel();
+        db.settings = { autoApprove: pfSet().autoApprove, graceDays: parseInt(gid('sGrace').value) || 0, company: gid('sComp').value.trim() || 'EMPRESA DE TECNOLOGIA ONLG', bankAccounts: [], logo: logo || keepLogo };
+        PLATFORM_CONFIG.bankAccounts = []; pfSave(db); pfSweep(); pfMsg('Ajustes guardados ✔', true); pfOwnerPanel();
     };
     if (file) {
         if (file.size > 1200000) return pfMsg('El logo debe pesar menos de 1.2 MB.');
@@ -8421,7 +8366,7 @@ function pfContactBtns() {
 function pfChoose(id) {
     pfPlan = PLATFORM_CONFIG.plans.find(p => p.id === id); const box = gid('pfPay'); box.style.display = 'block';
     box.innerHTML = '<div class="pf-sum"><div><small>Plan elegido</small><b>' + pfPlan.name + '</b></div><div style="text-align:right"><small>Total a pagar</small><b>' + pfAmt(pfPlan) + '</b><br><small>≈ $' + pfFmt(pfPlan.price) + ' USD</small></div></div><h4 class="pf-h">¿Cómo quieres pagar?</h4>' +
-        '<div class="pf-methods" style="grid-template-columns:repeat(2,1fr)"><button class="pf-m" onclick="pfSel(this);pfBankForm()"><i class="fas fa-building-columns"></i><span>Cuenta de banco</span><small>Depósito o transferencia</small></button>' +
+        '<div class="pf-methods" style="grid-template-columns:repeat(2,1fr)">' +
         '<button class="pf-m" onclick="pfSel(this);pfCashInfo()"><i class="fas fa-money-bill-wave"></i><span>Efectivo</span><small>Te visitamos</small></button>' +
         '<button class="pf-m" onclick="pfSel(this);pfPaypal()"><i class="fab fa-paypal"></i><span>PayPal</span><small>Tarjeta o saldo</small></button>' +
         '<button class="pf-m" onclick="pfSel(this);pfGPay()"><i class="fab fa-google-pay"></i><span>Google Pay</span><small>Pago rápido</small></button></div><div id="payArea"></div><p class="pf-lock"><i class="fas fa-lock"></i> Tu membresía se activa al confirmar el pago.</p>';
@@ -8585,20 +8530,6 @@ function pfPayDone(p, a) {
     if (p.status === 'approved') gid('payArea').innerHTML = '<div class="pf-ok"><i class="fas fa-circle-check"></i><b>¡Pago recibido y membresía activada!</b><p>Recibo ' + escapeHtml(p.receiptNo || '') + ' · vence el ' + new Date(p.until || a.expiresAt).toLocaleDateString() + '</p><button class="pf-btn pf-full" onclick="pfEnter(pfDB().accounts.find(x=>x.id===\'' + a.id + '\'),\'owner\')">Entrar al sistema</button><button class="pf-btn alt pf-full" style="margin-top:.5rem" onclick="pfPrintPay(\'' + p.id + '\')">Ver mi recibo</button></div>';
     else gid('payArea').innerHTML = '<div class="pf-ok"><i class="fas fa-circle-check"></i><b>Pago enviado</b><p>Cuando verifiquemos tu pago, tu membresía se activa.</p></div>';
 }
-const _pfSend0 = pfSendReceipt;
-pfSendReceipt = function () {
-    if (!cloudOn()) return _pfSend0();
-    const f = gid('rcpt').files[0], ref = gid('bkRef').value.trim(), acct = gid('bkAcct').value.replace(/[\s-]/g, '');
-    if (!/^\d{6,20}$/.test(acct)) return pfMsg('Escribe tu número de cuenta (solo números, de 6 a 20 dígitos).'); if (ref.length < 4) return pfMsg('Escribe el número de referencia de la transacción.');
-    if (!f) return pfMsg('Sube la foto del comprobante.'); if (f.size > 1500000) return pfMsg('La imagen pesa más de 1.5 MB.');
-    const to = PLATFORM_CONFIG.bankAccounts[gid('bkTo').value].bank, from = gid('bkFrom').value, rd = new FileReader();
-    rd.onload = async () => {
-        const id = 'p' + Date.now() + Math.random().toString(36).slice(2, 5);
-        const ins = await cloud().from('payments').insert({ id, tenant_id: pfAcc.id, plan: pfPlan.id, months: pfPlan.months, price: pfPlan.price, method: 'Banco', data: { bankTo: to, bankFrom: from, fromAccount: acct, ref, receipt: rd.result } }).select().single();
-        if (ins.error) return pfMsg(ins.error.code === '23505' ? 'Esa referencia ya fue usada en otro pago.' : 'No se pudo enviar: ' + ins.error.message);
-        await pfPull(); const p = pfDB().payments.find(x => x.id === id) || rowPay(ins.data), a = pfDB().accounts.find(x => x.id === pfAcc.id) || pfAcc; pfAcc = a; pfPayDone(p, a);
-    }; rd.readAsDataURL(f);
-};
 const _pfPaid0 = pfPaid;
 pfPaid = async function (method) {
     if (!cloudOn()) return _pfPaid0(method);
@@ -10588,8 +10519,8 @@ pfProceed = async function (acc) {
 </script>
 
 <script id="loginExtras">
-/* ==================== LOGIN: Apple, teléfono + código por SMS, y pantalla de planes después de entrar ====================
-   Apple y SMS requieren activarse en Supabase (Authentication > Providers). Ver supabase_login_apple_telefono.sql */
+/* ==================== LOGIN: Apple y pantalla de planes después de entrar ====================
+   Apple requiere activarse en Supabase (Authentication > Providers). */
 (function () {
     const ph = { phone: '' };
     const guard = (k, fn) => pfGuard(k, fn, true);
@@ -10611,67 +10542,6 @@ pfProceed = async function (acc) {
         if (r.error) { sessionStorage.removeItem('pfOAuth'); pfMsg(errMsg(r.error)); }
     };
 
-    /* ---------- Teléfono + SMS ---------- */
-    function phStep(n) { gid('phS1').style.display = n === 1 ? 'block' : 'none'; gid('phS2').style.display = n === 2 ? 'block' : 'none'; if (n === 2) setTimeout(() => { const i = gid('phCode'); if (i) i.focus(); }, 50); }
-    window.pfPhoneView = function () {
-        ['in', 'up', 'cash'].forEach(x => { gid('pfT_' + x).style.display = 'none'; gid('pfB_' + x).className = 'pf-tab'; });
-        gid('pfT_ph').style.display = 'block'; phStep(1); pfMsg('');
-    };
-    async function sendCode(first) {
-        await sbReady(); const sb = cloud();
-        let cc = gid('phCc').value.replace(/\D/g, ''), num = gid('phNum').value.replace(/\D/g, '').replace(/^0+/, '');
-        if (!first && ph.phone) { /* reenvío al mismo número */ } else {
-            if (!cc || num.length < 6 || num.length > 12) return pfMsg('Escribe un número de teléfono válido.');
-            if (!gid('phTerms').checked) return pfMsg('Debes aceptar los Términos y la Política de privacidad.');
-            ph.phone = '+' + cc + num;
-        }
-        const data = {}, nm = gid('phName').value.trim(), bz = gid('phBiz').value.trim(); if (nm) data.name = nm; if (bz) data.business = bz;
-        const options = { shouldCreateUser: true, channel: 'sms', data };
-        if (PLATFORM_CONFIG.turnstileSiteKey && typeof _capTok !== 'undefined' && _capTok) options.captchaToken = _capTok;
-        const r = await sb.auth.signInWithOtp({ phone: ph.phone, options });
-        if (r.error) return pfMsg(errMsg(r.error));
-        gid('phSent').textContent = 'Te enviamos un código por SMS al ' + ph.phone + '.'; phStep(2); pfMsg('Código enviado ✔', true);
-    }
-    window.pfPhoneSend = guard('ph-send', () => sendCode(true));
-    window.pfPhoneResend = guard('ph-resend', () => sendCode(false));
-    window.pfPhoneVerify = guard('ph-verify', async function () {
-        const tok = gid('phCode').value.replace(/\D/g, ''); if (tok.length < 6) return pfMsg('Escribe el código de 6 dígitos que llegó por SMS.');
-        await sbReady(); const r = await cloud().auth.verifyOtp({ phone: ph.phone, token: tok, type: 'sms' });
-        if (r.error || !r.data || !r.data.session) return pfMsg('Código incorrecto o vencido. Pide uno nuevo con “Reenviar código”.');
-        await pfPull(); const acc = pfDB().accounts.find(a => a.id === r.data.user.id);
-        if (!acc) return pfMsg('No se pudo crear tu cuenta. Intenta de nuevo.');
-        pfNotify('login', 'Inicio con teléfono: ' + ph.phone.slice(0, -4) + '••••'); pfMsg('¡Listo!', true); pfProceed(acc);
-    });
-
-    /* ---------- Inyectar botones y panel en la pantalla de acceso ---------- */
-    function inject() {
-        const cash = gid('pfT_cash'); if (!cash) return;
-        if (!gid('pfT_ph')) {
-            const d = document.createElement('div'); d.id = 'pfT_ph'; d.style.display = 'none';
-            d.innerHTML = '<div id="phS1"><h3 style="margin:.2rem 0 .6rem"><i class="fas fa-mobile-screen"></i> Entrar con tu teléfono</h3>' +
-                '<p style="font-size:.82rem;color:#64748b;margin:0 0 .6rem">Te enviamos un código por mensaje de texto (SMS). Si es tu primera vez, se crea tu cuenta.</p>' +
-                '<label>Tu nombre (solo la primera vez)</label><input id="phName" autocomplete="name"><label>Nombre de tu pulpería (solo la primera vez)</label><input id="phBiz">' +
-                '<label>Número de teléfono</label><div style="display:grid;grid-template-columns:90px 1fr;gap:.4rem"><input id="phCc" value="+504" inputmode="tel" aria-label="Código del país"><input id="phNum" type="tel" inputmode="tel" placeholder="9999-9999" autocomplete="tel-national"></div>' +
-                '<label style="display:flex;gap:.55rem;align-items:flex-start;font-size:.82rem;margin:.8rem 0;color:#334155"><input type="checkbox" id="phTerms" style="width:auto;margin-top:.2rem"> <span>Acepto los <a href="#" onclick="pfLegalOpen(\'terms\');return false">Términos y condiciones</a> y la <a href="#" onclick="pfLegalOpen(\'privacy\');return false">Política de privacidad</a>.</span></label>' +
-                '<button class="pf-btn" style="width:100%" onclick="pfPhoneSend()"><i class="fas fa-paper-plane"></i> Enviar código por SMS</button></div>' +
-                '<div id="phS2" style="display:none"><h3 style="margin:.2rem 0 .6rem">Escribe el código</h3><p id="phSent" style="font-size:.85rem;color:#475569"></p>' +
-                '<input id="phCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="••••••" oninput="this.value=this.value.replace(/[^0-9]/g,String())">' +
-                '<button class="pf-btn" style="width:100%" onclick="pfPhoneVerify()">Confirmar y continuar</button>' +
-                '<button class="pf-btn alt" style="width:100%;margin-top:.5rem" onclick="pfPhoneResend()">Reenviar código</button>' +
-                '<p style="text-align:center;margin:.6rem 0 0"><a href="#" onclick="document.getElementById(\'phS1\').style.display=\'block\';document.getElementById(\'phS2\').style.display=\'none\';return false">Cambiar número</a></p></div>' +
-                '<p style="text-align:center;margin-top:.8rem"><a href="#" onclick="pfTab(\'in\');return false">← Otras formas de entrar</a></p>';
-            cash.parentNode.insertBefore(d, cash.nextSibling);
-        }
-        [/* botón de teléfono (SMS) oculto por ahora: para activarlo devuelve ['pfT_in', false], ['pfT_up', true] */].forEach(a => {
-            const el = gid(a[0]); if (!el || el.querySelector('.stAlt')) return;
-            const g = Array.from(el.querySelectorAll('button')).filter(b => /google/i.test(b.textContent)).pop();
-            const html = '<button type="button" class="pf-btn alt stAlt" style="width:100%;margin-top:.6rem" onclick="pfPhoneView()"><i class="fas fa-mobile-screen"></i> ' + (a[1] ? 'Registrarme' : 'Continuar') + ' con teléfono (SMS)</button>';
-            if (g) g.insertAdjacentHTML('afterend', html); else el.insertAdjacentHTML('beforeend', html);
-        });
-    }
-    const _tab = window.pfTab; window.pfTab = function () { const p = gid('pfT_ph'); if (p) p.style.display = 'none'; return _tab.apply(this, arguments); };
-    const _pv = window.pfView; window.pfView = function () { const r = _pv.apply(this, arguments); try { inject(); } catch (e) {} return r; };
-    inject();
 
     /* ---------- Después de entrar: SIEMPRE la pantalla de planes (mismos precios de la página principal) ----------
        Sin membresía ni prueba no se abre el sistema. Se vuelve a dibujar por si algo la pisa al terminar de cargar. */
@@ -11189,9 +11059,9 @@ pfProceed = async function (acc) {
     if (pv && m) pv.insertAdjacentHTML('beforeend', '<div style="color:#b91c1c;font-weight:700;display:block">' + esc(m) + '</div>');
   };
 
-  // Del lado del cliente: no deja elegir plan ni pagar por PayPal / banco / Google Pay mientras esté vigente
+  // Del lado del cliente: no deja elegir plan ni pagar por PayPal / Google Pay mientras esté vigente
   function curBlock() { const db = pfDB(); return buyBlock(db.accounts.find(x => pfAcc && x.id === pfAcc.id), db); }
-  ['pfChoose', 'pfPaypal', 'pfPaid', 'pfSendReceipt', 'pfGPay'].forEach(n => {
+  ['pfChoose', 'pfPaypal', 'pfPaid', 'pfGPay'].forEach(n => {
     const o = window[n]; if (typeof o !== 'function') return;
     window[n] = function () { const m = curBlock(); if (m) { pfMsg(m); alert(m); return; } return o.apply(this, arguments); };
   });
@@ -12168,4 +12038,3 @@ pfProceed = async function (acc) {
 
 </body>
 </html>
-
